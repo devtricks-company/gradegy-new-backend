@@ -26,7 +26,10 @@ import { SnapchatStrategy } from './strategies/snapchat.strategy';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('auth.jwt.secret', 'change-me'),
         signOptions: {
-          expiresIn: configService.get<string | number>('auth.jwt.expiresIn', '1h'),
+          expiresIn: configService.get<string | number>(
+            'auth.jwt.expiresIn',
+            '1h',
+          ),
         },
       }),
     }),

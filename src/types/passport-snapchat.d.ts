@@ -19,11 +19,7 @@ declare module 'passport-snapchat' {
     _json?: Record<string, unknown>;
   }
 
-  export type VerifyCallback = (
-    error: any,
-    user?: any,
-    info?: any,
-  ) => void;
+  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
 
   export type SnapchatVerifyFunction = (
     accessToken: string,

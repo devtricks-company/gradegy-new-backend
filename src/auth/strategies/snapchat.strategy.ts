@@ -46,8 +46,7 @@ export class SnapchatStrategy extends PassportStrategy(Strategy, 'snapchat') {
     const displayName = profile.displayName ?? profile._json?.data?.displayName;
     const displayParts = displayName?.trim().split(' ').filter(Boolean) ?? [];
 
-    const firstName =
-      profile.name?.givenName ?? displayParts[0] ?? undefined;
+    const firstName = profile.name?.givenName ?? displayParts[0] ?? undefined;
     const lastName =
       profile.name?.familyName ??
       (displayParts.length > 1 ? displayParts.slice(1).join(' ') : undefined);

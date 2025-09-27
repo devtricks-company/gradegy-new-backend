@@ -1,10 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
@@ -26,7 +21,9 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Register a new user using email and password.' })
-  @ApiOkResponse({ description: 'User registered and authenticated successfully.' })
+  @ApiOkResponse({
+    description: 'User registered and authenticated successfully.',
+  })
   register(@Body() dto: RegisterLocalDto): Promise<AuthResponse> {
     return this.authService.registerLocal(dto);
   }
@@ -34,7 +31,9 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  @ApiOperation({ summary: 'Authenticate user credentials and issue JWT tokens.' })
+  @ApiOperation({
+    summary: 'Authenticate user credentials and issue JWT tokens.',
+  })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({ description: 'Tokens issued successfully.' })
   login(@CurrentUser() user: AuthenticatedUser): Promise<AuthResponse> {
@@ -78,7 +77,9 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Google OAuth2 callback handler.' })
   @ApiOkResponse({ description: 'Tokens issued via Google OAuth flow.' })
-  googleCallback(@CurrentUser() user: AuthenticatedUser): Promise<AuthResponse> {
+  googleCallback(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<AuthResponse> {
     return this.authService.login(user);
   }
 
@@ -95,7 +96,9 @@ export class AuthController {
   @UseGuards(SnapchatAuthGuard)
   @ApiOperation({ summary: 'Snapchat OAuth2 callback handler.' })
   @ApiOkResponse({ description: 'Tokens issued via Snapchat OAuth flow.' })
-  snapchatCallback(@CurrentUser() user: AuthenticatedUser): Promise<AuthResponse> {
+  snapchatCallback(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<AuthResponse> {
     return this.authService.login(user);
   }
 }

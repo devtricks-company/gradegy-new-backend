@@ -56,11 +56,16 @@ export class UsersService {
     providerId: string,
   ): Promise<UserDocument | null> {
     const query: FilterQuery<UserDocument> =
-      provider === 'google' ? { googleId: providerId } : { snapchatId: providerId };
+      provider === 'google'
+        ? { googleId: providerId }
+        : { snapchatId: providerId };
     return this.userModel.findOne(query).exec();
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserDocument> {
     const updatePayload = {
       ...updateUserDto,
       email: updateUserDto.email?.toLowerCase(),
@@ -90,7 +95,10 @@ export class UsersService {
   async upsertOAuthUser(input: OAuthUserInput): Promise<UserDocument> {
     const providerField: 'googleId' | 'snapchatId' =
       input.provider === 'google' ? 'googleId' : 'snapchatId';
-    const existingByProvider = await this.findByProvider(input.provider, input.providerId);
+    const existingByProvider = await this.findByProvider(
+      input.provider,
+      input.providerId,
+    );
 
     if (existingByProvider) {
       if (input.email && !existingByProvider.email) {
@@ -122,7 +130,7 @@ export class UsersService {
       });
     }
 
-    (user as UserDocument)[providerField] = input.providerId;
+    user[providerField] = input.providerId;
     user.lastLoginAt = new Date();
 
     return user.save();

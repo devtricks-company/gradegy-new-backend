@@ -38,7 +38,8 @@ async function bootstrap() {
     });
   }
 
-  const port = configService.get<number>('PORT') ?? Number(process.env.PORT) ?? 5400;
+  const port =
+    configService.get<number>('PORT') ?? Number(process.env.PORT) ?? 5400;
   await app.listen(port);
   logger.log(`Application is running on port ${port}`);
 }
