@@ -4,8 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { mongodbConfig, swaggerConfig } from './config';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { mongodbConfig, swaggerConfig } from './config';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
           'mongodb://127.0.0.1:27017/gradegy',
       }),
     }),
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
