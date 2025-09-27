@@ -13,6 +13,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { SchoolDistrictsModule } from './school-districts/school-districts.module';
 import { HighschoolsModule } from './highschools/highschools.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
     SchoolDistrictsModule,
     HighschoolsModule,
     OrganizationsModule,
+    ProjectsModule,
     AuthModule,
   ],
   controllers: [AppController],
