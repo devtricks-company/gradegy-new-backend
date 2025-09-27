@@ -12,23 +12,47 @@ export enum UserRole {
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ type: Boolean, required: true })
-  first_name!: boolean;
+  @Prop({ type: String, trim: true })
+  firstName?: string;
 
-  @Prop({ type: Boolean, required: true })
-  last_name!: boolean;
+  @Prop({ type: String, trim: true })
+  lastName?: string;
 
-  @Prop({ type: Boolean, required: true })
-  email!: boolean;
+  @Prop({
+    type: String,
+    lowercase: true,
+    unique: true,
+    sparse: true,
+    trim: true,
+  })
+  email?: string;
 
   @Prop({ type: String })
   password?: string;
+
+  @Prop({ type: String, unique: true, sparse: true })
+  googleId?: string;
+
+  @Prop({ type: String, unique: true, sparse: true })
+  snapchatId?: string;
+
+  @Prop({ type: String })
+  avatarUrl?: string;
 
   @Prop({ type: String, enum: UserRole, default: UserRole.Student })
   role!: UserRole;
 
   @Prop({ type: Boolean, default: true })
   isActive!: boolean;
+
+  @Prop({ type: Date })
+  lastLoginAt?: Date;
+
+  @Prop({ type: String })
+  refreshTokenHash?: string;
+
+  @Prop({ type: Date })
+  refreshTokenExpiresAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
