@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -15,6 +15,7 @@ import { HighschoolsModule } from './highschools/highschools.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ProjectsModule } from './projects/projects.module';
 import { CategoriesModule } from './categories/categories.module';
+import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { UniversitiesModule } from './universities/universities.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { UniversitiesModule } from './universities/universities.module';
     OrganizationsModule,
     ProjectsModule,
     CategoriesModule,
+    SubcategoriesModule,
     UniversitiesModule,
     AuthModule,
   ],
