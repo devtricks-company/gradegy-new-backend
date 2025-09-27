@@ -14,6 +14,7 @@ import { SchoolDistrictsModule } from './school-districts/school-districts.modul
 import { HighschoolsModule } from './highschools/highschools.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ProjectsModule } from './projects/projects.module';
+import { UniversitiesModule } from './universities/universities.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ProjectsModule } from './projects/projects.module';
     HighschoolsModule,
     OrganizationsModule,
     ProjectsModule,
+    UniversitiesModule,
     AuthModule,
   ],
   controllers: [AppController],
