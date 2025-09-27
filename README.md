@@ -96,3 +96,30 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Authentication
+
+The backend now exposes an authentication module with local credentials, Google OAuth 2.0, and Snapchat sign-in flows.
+
+- `POST /auth/register` - register a new local user and receive JWT tokens.
+- `POST /auth/login` - authenticate with email/password (requires `Authorization: Bearer <token>` for protected routes).
+- `POST /auth/refresh` - exchange a refresh token for a new access/refresh pair.
+- `POST /auth/logout` - revoke the active refresh token for the authenticated user.
+- `GET /auth/google` and `GET /auth/google/callback` - Google OAuth redirect + callback pair.
+- `GET /auth/snapchat` and `GET /auth/snapchat/callback` - Snapchat OAuth redirect + callback pair.
+- `GET /auth/me` - retrieve the authenticated principal (JWT protected).
+
+## Environment Variables
+
+Configure the following variables in your `.env` file:
+
+- `MONGODB_URI` - MongoDB connection string.
+- `PORT` - HTTP port for the NestJS server.
+- `JWT_SECRET` - signing key for JWT access tokens (change this in production).
+- `JWT_EXPIRES_IN` - access token expiry duration accepted by `jsonwebtoken` (e.g. `1h`).
+- `JWT_REFRESH_SECRET` - signing key for refresh tokens (keep this private).
+- `JWT_REFRESH_EXPIRES_IN` - refresh token lifetime (e.g. `7d`).
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - credentials from the Google Cloud Console.
+- `GOOGLE_CALLBACK_URL` - public callback URL registered with Google.
+- `SNAPCHAT_CLIENT_ID` / `SNAPCHAT_CLIENT_SECRET` - credentials from the Snapchat developer portal.
+- `SNAPCHAT_CALLBACK_URL` - Snapchat OAuth callback URL.
+- `SNAPCHAT_SCOPE` - comma-separated Snapchat scopes (default: `user.display_name,user.bitmoji.avatar,user.external_id`).

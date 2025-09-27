@@ -1,22 +1,49 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MinLength,
+} from 'class-validator';
 import { UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto {
-  @ApiProperty({ type: Boolean, description: 'Indicates if the user has provided a first name.' })
-  first_name!: boolean;
+  @ApiPropertyOptional({ description: 'User given name.', example: 'Dana' })
+  @IsOptional()
+  @IsString()
+  firstName?: string;
 
-  @ApiProperty({ type: Boolean, description: 'Indicates if the user has provided a last name.' })
-  last_name!: boolean;
+  @ApiPropertyOptional({ description: 'User family name.', example: 'Azarbashi' })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
 
-  @ApiProperty({ type: Boolean, description: 'Flag representing email availability for the user.' })
-  email!: boolean;
+  @ApiPropertyOptional({ description: 'User email address.', example: 'user@example.com' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
-  @ApiProperty({ type: String, description: 'Hashed password for the user account.' })
-  password!: string;
+  @ApiPropertyOptional({ description: 'Plain text password (min 8 chars).', minLength: 8 })
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  password?: string;
 
-  @ApiProperty({ enum: UserRole, enumName: 'UserRole', description: 'Role assigned to the user within the system.' })
-  role!: UserRole;
+  @ApiPropertyOptional({ description: 'Avatar image URL.', example: 'https://example.com/avatar.png' })
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  avatarUrl?: string;
 
-  @ApiProperty({ type: Boolean, description: 'Determines whether the user account is active.' })
-  isActive!: boolean;
+  @ApiPropertyOptional({ enum: UserRole, enumName: 'UserRole', description: 'Role assigned to the user.' })
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
+
+  @ApiPropertyOptional({ description: 'Whether the user account is active.', default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
