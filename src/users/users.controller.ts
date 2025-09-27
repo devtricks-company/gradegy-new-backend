@@ -33,7 +33,10 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: 'Retrieve all users' })
-  @ApiOkResponse({ type: [User], description: 'List of users retrieved successfully.' })
+  @ApiOkResponse({
+    type: [User],
+    description: 'List of users retrieved successfully.',
+  })
   findAll() {
     return this.usersService.findAll();
   }

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -23,26 +24,40 @@ import { SchoolDistrictsService } from './school-districts.service';
 @ApiTags('school-districts')
 @Controller('school-districts')
 export class SchoolDistrictsController {
-  constructor(private readonly schoolDistrictsService: SchoolDistrictsService) {}
+  constructor(
+    private readonly schoolDistrictsService: SchoolDistrictsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new school district' })
-  @ApiCreatedResponse({ type: SchoolDistrict, description: 'School district successfully created.' })
+  @ApiCreatedResponse({
+    type: SchoolDistrict,
+    description: 'School district successfully created.',
+  })
   create(@Body() createSchoolDistrictDto: CreateSchoolDistrictDto) {
     return this.schoolDistrictsService.create(createSchoolDistrictDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Retrieve all school districts' })
-  @ApiOkResponse({ type: [SchoolDistrict], description: 'School districts retrieved successfully.' })
-  findAll() {
-    return this.schoolDistrictsService.findAll();
+  @ApiOkResponse({
+    type: [SchoolDistrict],
+    description: 'School districts retrieved successfully.',
+  })
+  findAll(@Query() query: Record<string, unknown>) {
+    return this.schoolDistrictsService.findAll(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Retrieve a school district by id' })
-  @ApiParam({ name: 'id', description: 'MongoDB identifier of the school district.' })
-  @ApiOkResponse({ type: SchoolDistrict, description: 'School district retrieved successfully.' })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB identifier of the school district.',
+  })
+  @ApiOkResponse({
+    type: SchoolDistrict,
+    description: 'School district retrieved successfully.',
+  })
   @ApiNotFoundResponse({ description: 'School district not found.' })
   findOne(@Param('id') id: string) {
     return this.schoolDistrictsService.findOne(id);
@@ -50,17 +65,32 @@ export class SchoolDistrictsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an existing school district' })
-  @ApiParam({ name: 'id', description: 'MongoDB identifier of the school district.' })
-  @ApiOkResponse({ type: SchoolDistrict, description: 'School district updated successfully.' })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB identifier of the school district.',
+  })
+  @ApiOkResponse({
+    type: SchoolDistrict,
+    description: 'School district updated successfully.',
+  })
   @ApiNotFoundResponse({ description: 'School district not found.' })
-  update(@Param('id') id: string, @Body() updateSchoolDistrictDto: UpdateSchoolDistrictDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateSchoolDistrictDto: UpdateSchoolDistrictDto,
+  ) {
     return this.schoolDistrictsService.update(id, updateSchoolDistrictDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remove a school district by id' })
-  @ApiParam({ name: 'id', description: 'MongoDB identifier of the school district.' })
-  @ApiOkResponse({ type: SchoolDistrict, description: 'School district removed successfully.' })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB identifier of the school district.',
+  })
+  @ApiOkResponse({
+    type: SchoolDistrict,
+    description: 'School district removed successfully.',
+  })
   @ApiNotFoundResponse({ description: 'School district not found.' })
   remove(@Param('id') id: string) {
     return this.schoolDistrictsService.remove(id);

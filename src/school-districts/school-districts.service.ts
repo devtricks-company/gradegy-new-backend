@@ -1,9 +1,48 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import {
+  ExecuteQueryResult,
+  MongooseQueryConfig,
+  executeMongooseQuery,
+} from '../common/utils/mongoose-query.util';
 import { CreateSchoolDistrictDto } from './dto/create-school-district.dto';
 import { UpdateSchoolDistrictDto } from './dto/update-school-district.dto';
-import { SchoolDistrict, SchoolDistrictDocument } from './schemas/school-district.schema';
+import {
+  SchoolDistrict,
+  SchoolDistrictDocument,
+} from './schemas/school-district.schema';
+
+const SCHOOL_DISTRICT_QUERY_CONFIG: MongooseQueryConfig<SchoolDistrictDocument> =
+  {
+    searchableFields: [
+      'agancy_id',
+      'agancy_name',
+      'state_name',
+      'state_agancy_id',
+    ],
+    filterableFields: {
+      agancy_id: { type: 'string', operators: ['eq', 'in'] },
+      agancy_name: { type: 'string', operators: ['eq', 'in'] },
+      state_name: { type: 'string', operators: ['eq', 'in'] },
+      state_agancy_id: { type: 'string', operators: ['eq', 'in'] },
+      isActive: { type: 'boolean', operators: ['eq'] },
+      createdAt: { type: 'date', operators: ['gte', 'lte'] },
+      updatedAt: { type: 'date', operators: ['gte', 'lte'] },
+    },
+    allowedSortFields: [
+      'agancy_name',
+      'agancy_id',
+      'state_name',
+      'state_agancy_id',
+      'createdAt',
+      'updatedAt',
+    ],
+    defaultSort: { agancy_name: 1 },
+    defaultLimit: 25,
+    maxLimit: 100,
+    lean: false,
+  };
 
 @Injectable()
 export class SchoolDistrictsService {
@@ -12,13 +51,15 @@ export class SchoolDistrictsService {
     private readonly schoolDistrictModel: Model<SchoolDistrictDocument>,
   ) {}
 
-  async create(createDto: CreateSchoolDistrictDto): Promise<SchoolDistrictDocument> {
+  async create(
+    createDto: CreateSchoolDistrictDto,
+  ): Promise<SchoolDistrictDocument> {
     const payload: Partial<SchoolDistrict> = {
       ...createDto,
-      agencyId: createDto.agencyId.trim(),
-      agencyName: createDto.agencyName.trim(),
-      stateName: createDto.stateName.trim(),
-      stateAgencyId: createDto.stateAgencyId.trim(),
+      agancy_id: createDto.agancy_id.trim(),
+      agancy_name: createDto.agancy_name.trim(),
+      state_name: createDto.state_name.trim(),
+      state_agancy_id: createDto.state_agancy_id.trim(),
       isActive: createDto.isActive ?? true,
     };
 
@@ -26,8 +67,14 @@ export class SchoolDistrictsService {
     return createdDistrict.save();
   }
 
-  async findAll(): Promise<SchoolDistrictDocument[]> {
-    return this.schoolDistrictModel.find().exec();
+  async findAll(
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<SchoolDistrictDocument>> {
+    return executeMongooseQuery<SchoolDistrictDocument>({
+      model: this.schoolDistrictModel,
+      rawQuery,
+      config: SCHOOL_DISTRICT_QUERY_CONFIG,
+    });
   }
 
   async findOne(id: string): Promise<SchoolDistrictDocument> {
@@ -40,20 +87,23 @@ export class SchoolDistrictsService {
     return district;
   }
 
-  async update(id: string, updateDto: UpdateSchoolDistrictDto): Promise<SchoolDistrictDocument> {
+  async update(
+    id: string,
+    updateDto: UpdateSchoolDistrictDto,
+  ): Promise<SchoolDistrictDocument> {
     const updatePayload: Partial<SchoolDistrict> = {};
 
-    if (updateDto.agencyId !== undefined) {
-      updatePayload.agencyId = updateDto.agencyId.trim();
+    if (updateDto.agancy_id !== undefined) {
+      updatePayload.agancy_id = updateDto.agancy_id.trim();
     }
-    if (updateDto.agencyName !== undefined) {
-      updatePayload.agencyName = updateDto.agencyName.trim();
+    if (updateDto.agancy_name !== undefined) {
+      updatePayload.agancy_name = updateDto.agancy_name.trim();
     }
-    if (updateDto.stateName !== undefined) {
-      updatePayload.stateName = updateDto.stateName.trim();
+    if (updateDto.state_name !== undefined) {
+      updatePayload.state_name = updateDto.state_name.trim();
     }
-    if (updateDto.stateAgencyId !== undefined) {
-      updatePayload.stateAgencyId = updateDto.stateAgencyId.trim();
+    if (updateDto.state_agancy_id !== undefined) {
+      updatePayload.state_agancy_id = updateDto.state_agancy_id.trim();
     }
     if (updateDto.isActive !== undefined) {
       updatePayload.isActive = updateDto.isActive;
@@ -71,7 +121,9 @@ export class SchoolDistrictsService {
   }
 
   async remove(id: string): Promise<SchoolDistrictDocument> {
-    const deletedDistrict = await this.schoolDistrictModel.findByIdAndDelete(id).exec();
+    const deletedDistrict = await this.schoolDistrictModel
+      .findByIdAndDelete(id)
+      .exec();
 
     if (!deletedDistrict) {
       throw new NotFoundException(`School district with id "${id}" not found.`);

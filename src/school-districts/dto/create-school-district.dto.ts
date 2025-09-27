@@ -8,17 +8,17 @@ export class CreateSchoolDistrictDto {
   })
   @IsString()
   @IsNotEmpty()
-  agencyId!: string;
+  agancy_id!: string;
 
   @ApiProperty({ description: 'Human-readable school district name.', example: 'Los Angeles Unified' })
   @IsString()
   @IsNotEmpty()
-  agencyName!: string;
+  agancy_name!: string;
 
   @ApiProperty({ description: 'State where the district operates.', example: 'California' })
   @IsString()
   @IsNotEmpty()
-  stateName!: string;
+  state_name!: string;
 
   @ApiProperty({
     description: 'Identifier assigned by the state-level agency.',
@@ -26,7 +26,7 @@ export class CreateSchoolDistrictDto {
   })
   @IsString()
   @IsNotEmpty()
-  stateAgencyId!: string;
+  state_agancy_id!: string;
 
   @ApiPropertyOptional({ description: 'Flag indicating if the district is active.', default: true })
   @IsOptional()

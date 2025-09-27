@@ -6,10 +6,17 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
-import { UsersService, OAuthUserInput, OAuthProvider } from '../users/users.service';
+import {
+  UsersService,
+  OAuthUserInput,
+  OAuthProvider,
+} from '../users/users.service';
 import { RegisterLocalDto } from './dto/register-local.dto';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
-import type { AuthResponse, AuthTokens } from './interfaces/auth-response.interface';
+import type {
+  AuthResponse,
+  AuthTokens,
+} from './interfaces/auth-response.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { UserDocument } from '../users/schemas/user.schema';
 
@@ -54,7 +61,10 @@ export class AuthService {
     return this.buildAuthResponse(this.mapUser(userDocument));
   }
 
-  async validateLocalUser(email: string, password: string): Promise<AuthenticatedUser> {
+  async validateLocalUser(
+    email: string,
+    password: string,
+  ): Promise<AuthenticatedUser> {
     const user = await this.usersService.findByEmail(email);
 
     if (!user || !user.password) {
@@ -124,7 +134,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
-    if (user.refreshTokenExpiresAt && user.refreshTokenExpiresAt.getTime() < Date.now()) {
+    if (
+      user.refreshTokenExpiresAt &&
+      user.refreshTokenExpiresAt.getTime() < Date.now()
+    ) {
       throw new UnauthorizedException('Refresh token expired.');
     }
 
@@ -139,7 +152,9 @@ export class AuthService {
     await this.usersService.clearRefreshToken(userId);
   }
 
-  private async buildAuthResponse(user: AuthenticatedUser): Promise<AuthResponse> {
+  private async buildAuthResponse(
+    user: AuthenticatedUser,
+  ): Promise<AuthResponse> {
     const tokens = await this.issueTokens(user);
     return { user, tokens };
   }
@@ -155,7 +170,10 @@ export class AuthService {
       'auth.jwt.expiresIn',
       '1h',
     );
-    const accessTokenSecret = this.configService.get<string>('auth.jwt.secret', 'change-me');
+    const accessTokenSecret = this.configService.get<string>(
+      'auth.jwt.secret',
+      'change-me',
+    );
     const refreshTokenExpiresIn = this.configService.get<string | number>(
       'auth.jwt.refreshExpiresIn',
       '7d',
@@ -176,7 +194,11 @@ export class AuthService {
       }),
     ]);
 
-    await this.persistRefreshToken(user.id, refreshToken, refreshTokenExpiresIn);
+    await this.persistRefreshToken(
+      user.id,
+      refreshToken,
+      refreshTokenExpiresIn,
+    );
 
     return {
       accessToken,
@@ -196,11 +218,15 @@ export class AuthService {
       this.extractExpiration(refreshToken) ??
       new Date(Date.now() + this.resolveExpiresInMs(refreshTokenExpiresIn));
 
-    await this.usersService.updateRefreshToken(userId, refreshTokenHash, expiresAt);
+    await this.usersService.updateRefreshToken(
+      userId,
+      refreshTokenHash,
+      expiresAt,
+    );
   }
 
   private extractExpiration(token: string): Date | undefined {
-    const decoded = this.jwtService.decode(token) as { exp?: number } | null;
+    const decoded = this.jwtService.decode(token);
 
     if (!decoded?.exp) {
       return undefined;
