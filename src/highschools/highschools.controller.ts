@@ -94,7 +94,10 @@ export class HighschoolsController {
     description: 'High school updated successfully.',
   })
   @ApiNotFoundResponse({ description: 'High school not found.' })
-  update(@Param('id') id: string, @Body() updateHighschoolDto: UpdateHighschoolDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateHighschoolDto: UpdateHighschoolDto,
+  ) {
     return this.highschoolsService.update(id, updateHighschoolDto);
   }
 
