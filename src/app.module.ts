@@ -12,6 +12,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { SchoolDistrictsModule } from './school-districts/school-districts.module';
 import { HighschoolsModule } from './highschools/highschools.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { HighschoolsModule } from './highschools/highschools.module';
     UsersModule,
     SchoolDistrictsModule,
     HighschoolsModule,
+    OrganizationsModule,
     AuthModule,
   ],
   controllers: [AppController],

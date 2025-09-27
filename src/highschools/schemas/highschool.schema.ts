@@ -63,7 +63,8 @@ export class Highschool {
   school_state_id!: string;
 
   @ApiProperty({
-    description: 'Identifier assigned by the state agency overseeing the school.',
+    description:
+      'Identifier assigned by the state agency overseeing the school.',
     example: 'CA-STATE-56789',
   })
   @Prop({ type: String, trim: true })
