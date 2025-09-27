@@ -14,6 +14,7 @@ import { SchoolDistrictsModule } from './school-districts/school-districts.modul
 import { HighschoolsModule } from './highschools/highschools.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ProjectsModule } from './projects/projects.module';
+import { CategoriesModule } from './categories/categories.module';
 import { UniversitiesModule } from './universities/universities.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { UniversitiesModule } from './universities/universities.module';
     HighschoolsModule,
     OrganizationsModule,
     ProjectsModule,
+    CategoriesModule,
     UniversitiesModule,
     AuthModule,
   ],
