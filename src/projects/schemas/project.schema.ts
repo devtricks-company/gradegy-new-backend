@@ -10,6 +10,7 @@ export enum ProjectType {
   SchoolDistrict = 'school_district',
   University = 'university',
   SpecialProject = 'special_project',
+  
   OtherSecondary = 'other-secondary',
   OtherPostSecondary = 'other-post_secondary',
 }
@@ -27,6 +28,7 @@ export enum ProjectStatus {
 
 export const SECONDARY_PROJECT_TYPES: readonly ProjectType[] = [
   ProjectType.SchoolDistrict,
+  
   ProjectType.OtherSecondary,
 ];
 
