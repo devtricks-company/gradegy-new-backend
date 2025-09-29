@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import {
   ExecuteQueryResult,
   MongooseQueryConfig,
@@ -17,6 +17,13 @@ import {
   OrganizationDocument,
   OrganizationType,
 } from './schemas/organization.schema';
+import { Project, ProjectDocument, ProjectType } from '../projects/schemas/project.schema';
+import { Category, CategoryDocument } from '../categories/schemas/category.schema';
+import { Highschool, HighschoolDocument } from '../highschools/schemas/highschool.schema';
+import {
+  SchoolDistrict,
+  SchoolDistrictDocument,
+} from '../school-districts/schemas/school-district.schema';
 
 const ORGANIZATION_QUERY_CONFIG: MongooseQueryConfig<OrganizationDocument> = {
   searchableFields: ['title', 'short_title'],
@@ -55,6 +62,14 @@ export class OrganizationsService {
   constructor(
     @InjectModel(Organization.name)
     private readonly organizationModel: Model<OrganizationDocument>,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<ProjectDocument>,
+    @InjectModel(Category.name)
+    private readonly categoryModel: Model<CategoryDocument>,
+    @InjectModel(Highschool.name)
+    private readonly highschoolModel: Model<HighschoolDocument>,
+    @InjectModel(SchoolDistrict.name)
+    private readonly schoolDistrictModel: Model<SchoolDistrictDocument>,
   ) {}
 
   async create(
@@ -98,13 +113,118 @@ export class OrganizationsService {
       payload.short_title = null;
     }
 
-    const organization = new this.organizationModel(payload);
-    const savedOrganization = await organization.save();
-    await savedOrganization.populate({
+  const session = await this.organizationModel.db.startSession();
+  let savedOrganization: OrganizationDocument | null = null;
+
+    try {
+      await session.withTransaction(async () => {
+        const organization = new this.organizationModel(payload);
+        savedOrganization = await organization.save({ session });
+
+        if (
+          createDto.organization_type === OrganizationType.Secondary &&
+          createDto.school_district
+        ) {
+          await this.createSecondaryProjectAndCategories({
+            organization: savedOrganization!,
+            schoolDistrictId: createDto.school_district,
+            session,
+          });
+        }
+      });
+    } finally {
+      session.endSession();
+    }
+
+    if (!savedOrganization) {
+      throw new BadRequestException('Failed to create organization.');
+    }
+
+  await (savedOrganization as OrganizationDocument).populate({
       path: 'school_district',
       select: 'agancy_name state_name state_agancy_id',
     });
-    return savedOrganization;
+
+  return savedOrganization;
+  }
+
+  private async createSecondaryProjectAndCategories(args: {
+    organization: OrganizationDocument;
+    schoolDistrictId: string;
+    session: ClientSession;
+  }): Promise<void> {
+    const { organization, schoolDistrictId, session } = args;
+
+    if (!schoolDistrictId) {
+      throw new BadRequestException(
+        'school_district is required when organization_type is secondary.',
+      );
+    }
+
+    const schoolDistrict = await this.schoolDistrictModel
+      .findById(schoolDistrictId)
+      .session(session)
+      .exec();
+
+    if (!schoolDistrict) {
+      throw new BadRequestException(
+        `school_district with id "${schoolDistrictId}" not found.`,
+      );
+    }
+
+    const agencyName = schoolDistrict.agancy_name?.trim();
+    if (!agencyName) {
+      return;
+    }
+
+    const project = new this.projectModel({
+      title: agencyName,
+      project_type: ProjectType.SchoolDistrict,
+      organizations: [organization._id],
+      school_district: schoolDistrict._id,
+    });
+
+    const createdProject = await project.save({ session });
+
+
+    console.log('AgancyName', `'${agencyName}'`)
+    
+    const highschools = await this.highschoolModel
+    
+      .find({ agancy_name: agencyName })
+      .session(session)
+      .exec();
+
+      console.log('highschools', highschools)
+
+    if (!highschools.length) {
+      return;
+    }
+
+    const categories = highschools
+      .map((highschool) => {
+        const title = highschool.school_name?.trim();
+        if (!title) {
+          return null;
+        }
+        return {
+          title,
+          project: createdProject._id,
+          highschool: highschool._id,
+        };
+      })
+      .filter((value): value is {
+        title: string;
+        project: Types.ObjectId;
+        highschool: Types.ObjectId;
+      } => value !== null);
+
+    if (!categories.length) {
+      return;
+    }
+
+    console.log('categories', categories);
+    await this.categoryModel.insertMany(categories, { session });
   }
 
   async findAll(
