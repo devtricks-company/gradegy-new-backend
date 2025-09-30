@@ -17,9 +17,19 @@ import {
   OrganizationDocument,
   OrganizationType,
 } from './schemas/organization.schema';
-import { Project, ProjectDocument, ProjectType } from '../projects/schemas/project.schema';
-import { Category, CategoryDocument } from '../categories/schemas/category.schema';
-import { Highschool, HighschoolDocument } from '../highschools/schemas/highschool.schema';
+import {
+  Project,
+  ProjectDocument,
+  ProjectType,
+} from '../projects/schemas/project.schema';
+import {
+  Category,
+  CategoryDocument,
+} from '../categories/schemas/category.schema';
+import {
+  Highschool,
+  HighschoolDocument,
+} from '../highschools/schemas/highschool.schema';
 import {
   SchoolDistrict,
   SchoolDistrictDocument,
@@ -54,7 +64,12 @@ const ORGANIZATION_QUERY_CONFIG: MongooseQueryConfig<OrganizationDocument> = {
   defaultLimit: 25,
   maxLimit: 100,
   lean: false,
-  defaultPopulate:[{path:'school_district',select:'agancy_name state_name state_agancy_id'}]
+  defaultPopulate: [
+    {
+      path: 'school_district',
+      select: 'agancy_name state_name state_agancy_id',
+    },
+  ],
 };
 
 @Injectable()
@@ -113,8 +128,8 @@ export class OrganizationsService {
       payload.short_title = null;
     }
 
-  const session = await this.organizationModel.db.startSession();
-  let savedOrganization: OrganizationDocument | null = null;
+    const session = await this.organizationModel.db.startSession();
+    let savedOrganization: OrganizationDocument | null = null;
 
     try {
       await session.withTransaction(async () => {
@@ -126,7 +141,7 @@ export class OrganizationsService {
           createDto.school_district
         ) {
           await this.createSecondaryProjectAndCategories({
-            organization: savedOrganization!,
+            organization: savedOrganization,
             schoolDistrictId: createDto.school_district,
             session,
           });
@@ -140,12 +155,12 @@ export class OrganizationsService {
       throw new BadRequestException('Failed to create organization.');
     }
 
-  await (savedOrganization as OrganizationDocument).populate({
+    await (savedOrganization as OrganizationDocument).populate({
       path: 'school_district',
       select: 'agancy_name state_name state_agancy_id',
     });
 
-  return savedOrganization;
+    return savedOrganization;
   }
 
   private async createSecondaryProjectAndCategories(args: {
@@ -186,16 +201,15 @@ export class OrganizationsService {
 
     const createdProject = await project.save({ session });
 
+    console.log('AgancyName', `'${agencyName}'`);
 
-    console.log('AgancyName', `'${agencyName}'`)
-    
     const highschools = await this.highschoolModel
-    
+
       .find({ agancy_name: agencyName })
       .session(session)
       .exec();
 
-      console.log('highschools', highschools)
+    console.log('highschools', highschools);
 
     if (!highschools.length) {
       return;
@@ -213,11 +227,15 @@ export class OrganizationsService {
           highschool: highschool._id,
         };
       })
-      .filter((value): value is {
-        title: string;
-        project: Types.ObjectId;
-        highschool: Types.ObjectId;
-      } => value !== null);
+      .filter(
+        (
+          value,
+        ): value is {
+          title: string;
+          project: Types.ObjectId;
+          highschool: Types.ObjectId;
+        } => value !== null,
+      );
 
     if (!categories.length) {
       return;
@@ -391,5 +409,3 @@ export class OrganizationsService {
     return trimmed.length ? trimmed : undefined;
   }
 }
-
-

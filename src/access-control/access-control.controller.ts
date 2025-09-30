@@ -70,7 +70,9 @@ export class AccessControlController {
   }
 
   @Get('subcategories')
-  @ApiOperation({ summary: 'List subcategories accessible to the current user.' })
+  @ApiOperation({
+    summary: 'List subcategories accessible to the current user.',
+  })
   @ApiOkResponse({ type: Subcategory, isArray: true })
   @ApiQuery({
     name: 'categoryId',
@@ -89,8 +91,14 @@ export class AccessControlController {
   }
 
   @Get('subcategories/:id')
-  @ApiOperation({ summary: 'Get a subcategory if it is within the user scope.' })
-  @ApiParam({ name: 'id', description: 'Subcategory identifier.', type: String })
+  @ApiOperation({
+    summary: 'Get a subcategory if it is within the user scope.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Subcategory identifier.',
+    type: String,
+  })
   @ApiOkResponse({ type: Subcategory })
   async getSubcategory(
     @CurrentUser() user: AuthenticatedUser,
@@ -119,7 +127,11 @@ export class AccessControlController {
 
   @Patch('subcategories/:id')
   @ApiOperation({ summary: 'Update a subcategory within the permitted scope.' })
-  @ApiParam({ name: 'id', description: 'Subcategory identifier.', type: String })
+  @ApiParam({
+    name: 'id',
+    description: 'Subcategory identifier.',
+    type: String,
+  })
   @ApiOkResponse({ type: Subcategory })
   async updateSubcategory(
     @CurrentUser() user: AuthenticatedUser,
@@ -142,7 +154,11 @@ export class AccessControlController {
 
   @Delete('subcategories/:id')
   @ApiOperation({ summary: 'Delete a subcategory within the permitted scope.' })
-  @ApiParam({ name: 'id', description: 'Subcategory identifier.', type: String })
+  @ApiParam({
+    name: 'id',
+    description: 'Subcategory identifier.',
+    type: String,
+  })
   @ApiOkResponse({ type: Subcategory })
   async deleteSubcategory(
     @CurrentUser() user: AuthenticatedUser,
@@ -154,6 +170,3 @@ export class AccessControlController {
     return subcategory;
   }
 }
-
-
-

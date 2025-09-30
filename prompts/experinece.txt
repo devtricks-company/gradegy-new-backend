@@ -1,0 +1,32 @@
+we need to a model called experince, experiences are like tasks for users which users can complete theme and after complete the xps and gems that determine for experinece goes to user.
+experience schema has the following fields
+1- title ----> string
+2- subtitle ----> string
+3- description ----> string
+4- image -----> string
+5- experience_type -----> Types.ObjectId (experience_type is a collection with {title ---> string, color ---> string, icon ----> string} document)
+6- start_date -----> date
+7- start_time -----> string  it should available to user that this date and time
+8- end_date -----> date
+9- end_time -----> date date it should not available to user to available list but to goes to pastdue list in this date and time
+10- xp_completion ------> number 
+11- xp_view ------> number when the user open this experience for first time this xp should goes to user
+12- gems -----> number
+13- completion_type which is has the following option
+    - student
+    - photo
+    - admin
+    - link
+14- complete_url ---> string this field should be required if you select link option for completion_type
+15- auto_complete ----> boolean if it is true after user complete the experience  the xps and gems goes to user if it is false it wating for admin confirm that
+16- link_text -----> string
+17- link_url -------> string
+
+-you must create an experinece of sepcific organization which mean all users that belong to that organization, that experience is available to them
+
+-you can set project for experience that mean all users that belong to to that project can see this experience (optional)
+-you can set category for experience that mean all users that belog to that category can see this experience (optional)
+-you can set subcategory for experience that means all users that belong to that subcategory can see this experience (optional)
+
+-please create the experience shcema, dtos, services, controllers, follow the best practice rule as expert nestjs developer, and follow scalabe rules because i wanna add more features to it.
+do not forgat use swagger decoration for document and schema

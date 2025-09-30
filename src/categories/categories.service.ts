@@ -12,7 +12,10 @@ import { Category, CategoryDocument } from './schemas/category.schema';
 
 const DEFAULT_CATEGORY_POPULATE: PopulateOptions[] = [
   { path: 'project', select: 'title status is_active' },
-  { path: 'highschool', select: 'school_name school_id school_level is_active' },
+  {
+    path: 'highschool',
+    select: 'school_name school_id school_level is_active',
+  },
 ];
 
 const CATEGORY_QUERY_CONFIG: MongooseQueryConfig<CategoryDocument> = {
@@ -30,12 +33,7 @@ const CATEGORY_QUERY_CONFIG: MongooseQueryConfig<CategoryDocument> = {
     createdAt: { type: 'date', operators: ['gte', 'lte'] },
     updatedAt: { type: 'date', operators: ['gte', 'lte'] },
   },
-  allowedSortFields: [
-    'title',
-    'school_level',
-    'createdAt',
-    'updatedAt',
-  ],
+  allowedSortFields: ['title', 'school_level', 'createdAt', 'updatedAt'],
   defaultSort: { title: 1 },
   defaultPopulate: DEFAULT_CATEGORY_POPULATE,
   allowedPopulatePaths: ['project', 'highschool'],
@@ -175,5 +173,3 @@ export class CategoriesService {
     return new Types.ObjectId(value);
   }
 }
-
-

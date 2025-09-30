@@ -19,7 +19,8 @@ export class CreateUserAssignmentDto {
   organization!: string;
 
   @ApiPropertyOptional({
-    description: 'Optional project scope. Must belong to the organization when provided.',
+    description:
+      'Optional project scope. Must belong to the organization when provided.',
     type: String,
   })
   @IsOptional()
@@ -27,7 +28,8 @@ export class CreateUserAssignmentDto {
   project?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional category scope. Requires a project that owns the category.',
+    description:
+      'Optional category scope. Requires a project that owns the category.',
     type: String,
   })
   @IsOptional()
@@ -35,7 +37,8 @@ export class CreateUserAssignmentDto {
   category?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional subcategory scope. Requires the category that owns it.',
+    description:
+      'Optional subcategory scope. Requires the category that owns it.',
     type: String,
   })
   @IsOptional()

@@ -124,7 +124,9 @@ export class ProjectsService {
     });
   }
 
-  async findByOrganizationId(organizationId: string): Promise<ProjectDocument[]> {
+  async findByOrganizationId(
+    organizationId: string,
+  ): Promise<ProjectDocument[]> {
     if (!Types.ObjectId.isValid(organizationId)) {
       throw new BadRequestException('Invalid organization id format.');
     }
