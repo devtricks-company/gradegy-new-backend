@@ -19,6 +19,7 @@ import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { ExperiencesModule } from './experiences/experiences.module';
 import { UniversitiesModule } from './universities/universities.module';
 import { AccessControlModule } from './access-control/access-control.module';
+import { ExperienceProgressModule } from './experience-progress/experience-progress.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AccessControlModule } from './access-control/access-control.module';
     CategoriesModule,
     SubcategoriesModule,
     ExperiencesModule,
+    ExperienceProgressModule,
     UniversitiesModule,
     AccessControlModule,
     AuthModule,

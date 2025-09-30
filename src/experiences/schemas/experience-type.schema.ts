@@ -7,7 +7,8 @@ export type ExperienceTypeDocument = HydratedDocument<ExperienceType>;
 @Schema({ timestamps: true })
 export class ExperienceType {
   @ApiProperty({
-    description: 'Human-friendly label shown wherever the experience type appears.',
+    description:
+      'Human-friendly label shown wherever the experience type appears.',
     example: 'Workshop',
   })
   @Prop({ type: String, required: true, trim: true })
@@ -28,4 +29,5 @@ export class ExperienceType {
   icon!: string;
 }
 
-export const ExperienceTypeSchema = SchemaFactory.createForClass(ExperienceType);
+export const ExperienceTypeSchema =
+  SchemaFactory.createForClass(ExperienceType);
