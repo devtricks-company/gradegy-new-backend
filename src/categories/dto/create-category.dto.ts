@@ -73,7 +73,8 @@ export class CreateCategoryDto {
   project!: string;
 
   @ApiPropertyOptional({
-    description: 'Associated highschool when the category targets a specific school.',
+    description:
+      'Associated highschool when the category targets a specific school.',
     type: String,
     example: '6512bd43d9caa6e02c990b0e',
   })

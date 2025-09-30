@@ -1,7 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Category, CategorySchema } from '../categories/schemas/category.schema';
-import { Organization, OrganizationSchema } from '../organizations/schemas/organization.schema';
+import {
+  Category,
+  CategorySchema,
+} from '../categories/schemas/category.schema';
+import {
+  Organization,
+  OrganizationSchema,
+} from '../organizations/schemas/organization.schema';
 import {
   Subcategory,
   SubcategorySchema,
@@ -33,5 +39,3 @@ import {
   exports: [AccessControlService],
 })
 export class AccessControlModule {}
-
-

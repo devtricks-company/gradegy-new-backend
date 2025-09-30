@@ -7,8 +7,14 @@ import {
   OrganizationSchema,
 } from './schemas/organization.schema';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
-import { Category, CategorySchema } from '../categories/schemas/category.schema';
-import { Highschool, HighschoolSchema } from '../highschools/schemas/highschool.schema';
+import {
+  Category,
+  CategorySchema,
+} from '../categories/schemas/category.schema';
+import {
+  Highschool,
+  HighschoolSchema,
+} from '../highschools/schemas/highschool.schema';
 import {
   SchoolDistrict,
   SchoolDistrictSchema,

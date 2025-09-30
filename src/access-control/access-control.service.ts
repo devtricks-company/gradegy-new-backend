@@ -5,9 +5,15 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PopulateOptions, Types } from 'mongoose';
-import { Category, CategoryDocument } from '../categories/schemas/category.schema';
+import {
+  Category,
+  CategoryDocument,
+} from '../categories/schemas/category.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
-import { Organization, OrganizationDocument } from '../organizations/schemas/organization.schema';
+import {
+  Organization,
+  OrganizationDocument,
+} from '../organizations/schemas/organization.schema';
 import {
   Subcategory,
   SubcategoryDocument,
@@ -174,7 +180,9 @@ export class AccessControlService {
     }
 
     const allowedCategoryIds = this.toObjectIdArray(scope.categoryIds);
-    const filter: Record<string, unknown> = { _id: { $in: allowedCategoryIds } };
+    const filter: Record<string, unknown> = {
+      _id: { $in: allowedCategoryIds },
+    };
 
     if (projectId) {
       filter.project = this.toObjectId(projectId, 'project');
@@ -187,13 +195,19 @@ export class AccessControlService {
       .exec();
   }
 
-  async ensureCategoryReadAccess(userId: string, categoryId: string): Promise<void> {
+  async ensureCategoryReadAccess(
+    userId: string,
+    categoryId: string,
+  ): Promise<void> {
     const scope = await this.getAccessScope(userId);
     const normalizedId = this.normalizeId(categoryId, 'category');
     this.ensureCategoryInScope(scope, normalizedId, 'read');
   }
 
-  async ensureCategoryWriteAccess(userId: string, categoryId: string): Promise<void> {
+  async ensureCategoryWriteAccess(
+    userId: string,
+    categoryId: string,
+  ): Promise<void> {
     const scope = await this.getAccessScope(userId);
     const normalizedId = this.normalizeId(categoryId, 'category');
     this.ensureCategoryInScope(scope, normalizedId, 'write');
@@ -344,12 +358,16 @@ export class AccessControlService {
     return this.freezeScope(scope);
   }
 
-  private async expandFromOrganizations(scope: MutableAccessScope): Promise<void> {
+  private async expandFromOrganizations(
+    scope: MutableAccessScope,
+  ): Promise<void> {
     if (!scope.orgWideOrganizationIds.size) {
       return;
     }
 
-    const organizationObjectIds = this.toObjectIdArray(scope.orgWideOrganizationIds);
+    const organizationObjectIds = this.toObjectIdArray(
+      scope.orgWideOrganizationIds,
+    );
     const projects = await this.projectModel
       .find({ organizations: { $in: organizationObjectIds } })
       .select('_id')
@@ -414,7 +432,9 @@ export class AccessControlService {
     }
   }
 
-  private async ensureOrganizationExists(organizationId: string): Promise<void> {
+  private async ensureOrganizationExists(
+    organizationId: string,
+  ): Promise<void> {
     const exists = await this.organizationModel.exists({
       _id: this.toObjectId(organizationId, 'organization'),
     });
@@ -437,7 +457,9 @@ export class AccessControlService {
       .exec();
 
     if (!project) {
-      throw new BadRequestException(`Project with id "${projectId}" not found.`);
+      throw new BadRequestException(
+        `Project with id "${projectId}" not found.`,
+      );
     }
 
     const projectOrganizations =
@@ -503,7 +525,8 @@ export class AccessControlService {
     }
 
     const subcategoryCategoryId = this.extractId(
-      (subcategory.category as Types.ObjectId | string | undefined) ?? undefined,
+      (subcategory.category as Types.ObjectId | string | undefined) ??
+        undefined,
     );
 
     if (!subcategoryCategoryId) {
@@ -597,7 +620,9 @@ export class AccessControlService {
     return new Types.ObjectId(value).toHexString();
   }
 
-  private extractId(id: Types.ObjectId | string | undefined | null): string | null {
+  private extractId(
+    id: Types.ObjectId | string | undefined | null,
+  ): string | null {
     if (!id) {
       return null;
     }
@@ -609,10 +634,3 @@ export class AccessControlService {
     return new Types.ObjectId(id).toHexString();
   }
 }
-
-
-
-
-
-
-

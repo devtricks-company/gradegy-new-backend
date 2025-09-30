@@ -94,7 +94,10 @@ export class CategoriesController {
     description: 'Category updated successfully.',
   })
   @ApiNotFoundResponse({ description: 'Category not found.' })
-  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateCategoryDto: UpdateCategoryDto,
+  ) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 

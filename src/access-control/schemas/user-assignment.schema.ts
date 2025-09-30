@@ -30,7 +30,10 @@ export class UserAssignment {
   })
   organization!: Types.ObjectId;
 
-  @ApiPropertyOptional({ description: 'Project scope when assignment targets a project.', type: String })
+  @ApiPropertyOptional({
+    description: 'Project scope when assignment targets a project.',
+    type: String,
+  })
   @Prop({
     type: Types.ObjectId,
     ref: Project.name,
@@ -38,7 +41,10 @@ export class UserAssignment {
   })
   project?: Types.ObjectId;
 
-  @ApiPropertyOptional({ description: 'Category scope when assignment targets a category.', type: String })
+  @ApiPropertyOptional({
+    description: 'Category scope when assignment targets a category.',
+    type: String,
+  })
   @Prop({
     type: Types.ObjectId,
     ref: Category.name,
@@ -46,7 +52,10 @@ export class UserAssignment {
   })
   category?: Types.ObjectId;
 
-  @ApiPropertyOptional({ description: 'Subcategory scope when assignment targets a subcategory.', type: String })
+  @ApiPropertyOptional({
+    description: 'Subcategory scope when assignment targets a subcategory.',
+    type: String,
+  })
   @Prop({
     type: Types.ObjectId,
     ref: Subcategory.name,
@@ -55,7 +64,10 @@ export class UserAssignment {
   subcategory?: Types.ObjectId;
 }
 
-export const UserAssignmentSchema = SchemaFactory.createForClass(UserAssignment);
+export const UserAssignmentSchema =
+  SchemaFactory.createForClass(UserAssignment);
 
-UserAssignmentSchema.index({ user: 1, organization: 1, project: 1, category: 1, subcategory: 1 }, { unique: true });
-
+UserAssignmentSchema.index(
+  { user: 1, organization: 1, project: 1, category: 1, subcategory: 1 },
+  { unique: true },
+);
