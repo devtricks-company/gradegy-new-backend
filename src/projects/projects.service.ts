@@ -124,6 +124,19 @@ export class ProjectsService {
     });
   }
 
+  async findByOrganizationId(organizationId: string): Promise<ProjectDocument[]> {
+    if (!Types.ObjectId.isValid(organizationId)) {
+      throw new BadRequestException('Invalid organization id format.');
+    }
+
+    const projects = await this.projectModel
+      .find({ organizations: new Types.ObjectId(organizationId) })
+      .populate(DEFAULT_PROJECT_POPULATE)
+      .exec();
+
+    return projects;
+  }
+
   async findOne(id: string): Promise<ProjectDocument> {
     const project = await this.projectModel
       .findById(id)
