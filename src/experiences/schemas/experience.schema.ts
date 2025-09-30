@@ -5,6 +5,7 @@ import { Category } from '../../categories/schemas/category.schema';
 import { Organization } from '../../organizations/schemas/organization.schema';
 import { Project } from '../../projects/schemas/project.schema';
 import { Subcategory } from '../../subcategories/schemas/subcategory.schema';
+import { ExperienceType } from './experience-type.schema';
 
 export type ExperienceDocument = HydratedDocument<Experience>;
 
@@ -57,7 +58,7 @@ export class Experience {
   })
   @Prop({
     type: Types.ObjectId,
-    ref: 'ExperienceType',
+    ref: ExperienceType.name,
     required: true,
   })
   experience_type!: Types.ObjectId;
