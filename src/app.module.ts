@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -17,6 +17,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { UniversitiesModule } from './universities/universities.module';
+import { AccessControlModule } from './access-control/access-control.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UniversitiesModule } from './universities/universities.module';
     CategoriesModule,
     SubcategoriesModule,
     UniversitiesModule,
+    AccessControlModule,
     AuthModule,
   ],
   controllers: [AppController],
@@ -62,3 +64,4 @@ import { UniversitiesModule } from './universities/universities.module';
   ],
 })
 export class AppModule {}
+
