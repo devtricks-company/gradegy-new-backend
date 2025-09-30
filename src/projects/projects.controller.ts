@@ -68,6 +68,21 @@ export class ProjectsController {
     return this.projectsService.findAll(query);
   }
 
+  @Get('organization/:organizationId')
+  @ApiOperation({ summary: 'Retrieve projects by organization id' })
+  @ApiParam({
+    name: 'organizationId',
+    description: 'MongoDB identifier of the organization.',
+  })
+  @ApiOkResponse({
+    type: Project,
+    isArray: true,
+    description: 'Projects retrieved successfully.',
+  })
+  findByOrganization(@Param('organizationId') organizationId: string) {
+    return this.projectsService.findByOrganizationId(organizationId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Retrieve a project by id' })
   @ApiParam({

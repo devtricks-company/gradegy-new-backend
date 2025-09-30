@@ -261,7 +261,15 @@ function resolveFilters<TDocument>(
 
   for (const [key, fieldConfig] of Object.entries(filterableFields)) {
     const path = fieldConfig.path ?? key;
-    const value = source[key] ?? fullQuery[key];
+    let value = source[key];
+
+    if (value === undefined) {
+      value = extractFilterValueFromQuery(fullQuery, key, fieldConfig);
+    }
+
+    if (value === undefined) {
+      value = fullQuery[key];
+    }
 
     if (value === undefined) {
       continue;
@@ -284,6 +292,97 @@ function resolveFilters<TDocument>(
   }
 
   return Object.keys(filters).length > 0 ? filters : null;
+}
+
+function extractFilterValueFromQuery(
+  query: Record<string, unknown>,
+  fieldKey: string,
+  config: FilterFieldConfig,
+): unknown {
+  if (!query || Object.keys(query).length === 0) {
+    return undefined;
+  }
+
+  const operators =
+    config.operators && config.operators.length
+      ? config.operators
+      : [DEFAULT_OPERATOR];
+
+  const allowedOperators = new Set<FilterOperator>(operators);
+  const supportsEq = allowedOperators.has('eq');
+
+  const collected: Record<string, unknown> = {};
+  let matched = false;
+
+  for (const [rawKey, rawValue] of Object.entries(query)) {
+    const match = rawKey.match(/^(filters?)\[([^\]]+)\](?:\[(.+)\])?$/);
+    if (!match) {
+      continue;
+    }
+
+    const [, , field, remainder] = match;
+    if (field !== fieldKey) {
+      continue;
+    }
+
+    if (!remainder) {
+      if (!supportsEq) {
+        continue;
+      }
+      collected.eq = mergeFilterOperatorValue(collected.eq, rawValue);
+      matched = true;
+      continue;
+    }
+
+    const segments = remainder.split('][');
+    const operatorKey = segments.shift();
+    if (!operatorKey || !allowedOperators.has(operatorKey as FilterOperator)) {
+      continue;
+    }
+
+    collected[operatorKey] = mergeFilterOperatorValue(
+      collected[operatorKey],
+      rawValue,
+    );
+    matched = true;
+  }
+
+  if (!matched) {
+    return undefined;
+  }
+
+  const operatorKeys = Object.keys(collected);
+  if (operatorKeys.length === 1 && operatorKeys[0] === 'eq') {
+    const eqValue = collected.eq;
+    if (Array.isArray(eqValue)) {
+      return eqValue.length === 1 ? eqValue[0] : eqValue;
+    }
+    return eqValue;
+  }
+
+  return collected;
+}
+
+function mergeFilterOperatorValue(
+  existing: unknown,
+  incoming: unknown,
+): unknown {
+  if (incoming === undefined) {
+    return existing;
+  }
+
+  if (existing === undefined) {
+    return incoming;
+  }
+
+  const existingArray = Array.isArray(existing) ? existing : [existing];
+
+  if (Array.isArray(incoming)) {
+    return existingArray.concat(incoming);
+  }
+
+  existingArray.push(incoming);
+  return existingArray;
 }
 
 function resolveSearch<TDocument>(
