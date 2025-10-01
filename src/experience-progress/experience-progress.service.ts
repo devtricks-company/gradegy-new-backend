@@ -29,7 +29,7 @@ const DEFAULT_PROGRESS_POPULATE: PopulateOptions[] = [
   {
     path: 'experience',
     select:
-      'title start_date end_date xp_completion xp_view gems completion_type auto_complete organization project category subcategory',
+      'title start_date start_time end_date end_time timing_type delay_days length_days sequence completion_required prerequisite end_with_parent xp_completion xp_view gems completion_type auto_complete organization project category subcategory',
   },
   {
     path: 'user',

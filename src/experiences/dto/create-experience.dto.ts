@@ -15,6 +15,7 @@ import {
 import {
   EXPERIENCE_TIME_PATTERN,
   ExperienceCompletionType,
+  ExperienceTimingType,
 } from '../schemas/experience.schema';
 
 export class CreateExperienceDto {
@@ -97,42 +98,132 @@ export class CreateExperienceDto {
   subcategory?: string;
 
   @ApiProperty({
+    enum: ExperienceTimingType,
+    enumName: 'ExperienceTimingType',
+    description: 'Determines how the experience availability window is calculated.',
+    default: ExperienceTimingType.DateRange,
+  })
+  @IsEnum(ExperienceTimingType)
+  timing_type!: ExperienceTimingType;
+
+  @ApiPropertyOptional({
+    description:
+      'Number of whole days to delay before showing a delay-after-previous experience.',
+    minimum: 0,
+    default: 0,
+  })
+  @ValidateIf(
+    (dto: CreateExperienceDto) =>
+      dto.timing_type === ExperienceTimingType.DelayAfterPrevious,
+  )
+  @IsInt()
+  @Min(0)
+  delay_days?: number;
+
+  @ApiPropertyOptional({
+    description: 'Defines ordering of experiences. Lower numbers appear earlier.',
+    default: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  sequence?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Experience that must be satisfied before this one becomes available.',
+    type: String,
+  })
+  @IsOptional()
+  @IsMongoId()
+  prerequisite?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Require completion before subsequent delayed experiences begin counting.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  completion_required?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'End this delay-after-previous child experience when the parent ends.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  end_with_parent?: boolean;
+
+  @ApiPropertyOptional({
     description:
       'Calendar date when the experience becomes visible to learners.',
     example: '2025-09-01',
     format: 'date',
   })
+  @ValidateIf(
+    (dto: CreateExperienceDto) =>
+      dto.timing_type === ExperienceTimingType.StartDateAndLength ||
+      dto.timing_type === ExperienceTimingType.DateRange,
+  )
   @IsISO8601()
-  start_date!: string;
+  start_date?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: '24-hour time when the experience unlocks on the start date.',
     example: '15:30',
   })
+  @ValidateIf(
+    (dto: CreateExperienceDto) =>
+      dto.timing_type === ExperienceTimingType.StartDateAndLength ||
+      dto.timing_type === ExperienceTimingType.DateRange,
+  )
   @Matches(EXPERIENCE_TIME_PATTERN, {
     message:
       'start_time must be in 24-hour HH:mm or HH:mm:ss format with leading zeros.',
   })
-  start_time!: string;
+  start_time?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
+    description:
+      'Inclusive number of days the experience remains available for start_date_and_length timing.',
+    minimum: 1,
+  })
+  @ValidateIf(
+    (dto: CreateExperienceDto) =>
+      dto.timing_type === ExperienceTimingType.StartDateAndLength,
+  )
+  @IsInt()
+  @Min(1)
+  length_days?: number;
+
+  @ApiPropertyOptional({
     description: 'Calendar date when the experience expires for learners.',
     example: '2025-09-30',
     format: 'date',
   })
+  @ValidateIf(
+    (dto: CreateExperienceDto) =>
+      dto.timing_type === ExperienceTimingType.DateRange,
+  )
   @IsISO8601()
-  end_date!: string;
+  end_date?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
       '24-hour time on the end date when the experience moves to past due.',
     example: '23:59',
   })
+  @ValidateIf(
+    (dto: CreateExperienceDto) =>
+      dto.timing_type === ExperienceTimingType.DateRange ||
+      dto.timing_type === ExperienceTimingType.StartDateAndLength,
+  )
   @Matches(EXPERIENCE_TIME_PATTERN, {
     message:
       'end_time must be in 24-hour HH:mm or HH:mm:ss format with leading zeros.',
   })
-  end_time!: string;
+  end_time?: string;
 
   @ApiProperty({
     description: 'XP awarded when the learner submits the required evidence.',
