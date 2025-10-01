@@ -12,6 +12,7 @@ import {
   Experience,
   ExperienceCompletionType,
   ExperienceDocument,
+  ExperienceTimingType,
 } from './schemas/experience.schema';
 
 const DEFAULT_EXPERIENCE_POPULATE: PopulateOptions[] = [
@@ -20,6 +21,7 @@ const DEFAULT_EXPERIENCE_POPULATE: PopulateOptions[] = [
   { path: 'project', select: 'title status is_active' },
   { path: 'category', select: 'title is_active' },
   { path: 'subcategory', select: 'title is_active' },
+  { path: 'prerequisite', select: 'title sequence timing_type completion_required' },
 ];
 
 const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
@@ -30,6 +32,13 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
     project: { type: 'objectId', operators: ['eq', 'in'] },
     category: { type: 'objectId', operators: ['eq', 'in'] },
     subcategory: { type: 'objectId', operators: ['eq', 'in'] },
+    timing_type: { type: 'string', operators: ['eq', 'in'] },
+    delay_days: { type: 'number', operators: ['eq', 'gte', 'lte'] },
+    length_days: { type: 'number', operators: ['eq', 'gte', 'lte'] },
+    sequence: { type: 'number', operators: ['eq', 'gte', 'lte'] },
+    prerequisite: { type: 'objectId', operators: ['eq', 'in'] },
+    completion_required: { type: 'boolean', operators: ['eq'] },
+    end_with_parent: { type: 'boolean', operators: ['eq'] },
     completion_type: { type: 'string', operators: ['eq', 'in'] },
     auto_complete: { type: 'boolean', operators: ['eq'] },
     start_date: { type: 'date', operators: ['gte', 'lte'] },
@@ -39,15 +48,17 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
   },
   allowedSortFields: [
     'title',
+    'sequence',
     'start_date',
     'end_date',
+    'delay_days',
     'xp_completion',
     'xp_view',
     'gems',
     'createdAt',
     'updatedAt',
   ],
-  defaultSort: { start_date: -1, start_time: -1 },
+  defaultSort: { sequence: 1, createdAt: -1 },
   defaultPopulate: DEFAULT_EXPERIENCE_POPULATE,
   allowedPopulatePaths: [
     'experience_type',
@@ -55,6 +66,7 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
     'project',
     'category',
     'subcategory',
+    'prerequisite',
   ],
   defaultLimit: 25,
   maxLimit: 100,
@@ -69,6 +81,8 @@ export class ExperiencesService {
   ) {}
 
   async create(createDto: CreateExperienceDto): Promise<ExperienceDocument> {
+    const startDate = this.toOptionalDate(createDto.start_date);
+    const endDate = this.toOptionalDate(createDto.end_date);
     const payload: Partial<Experience> = {
       title: this.normalizeRequiredString(createDto.title),
       subtitle: this.normalizeOptionalString(createDto.subtitle) ?? '',
@@ -79,10 +93,17 @@ export class ExperiencesService {
       project: this.toOptionalObjectId(createDto.project),
       category: this.toOptionalObjectId(createDto.category),
       subcategory: this.toOptionalObjectId(createDto.subcategory),
-      start_date: new Date(createDto.start_date),
-      start_time: this.normalizeTimeString(createDto.start_time),
-      end_date: new Date(createDto.end_date),
-      end_time: this.normalizeTimeString(createDto.end_time),
+      timing_type: createDto.timing_type,
+      delay_days: createDto.delay_days ?? 0,
+      length_days: createDto.length_days,
+      sequence: createDto.sequence ?? 0,
+      prerequisite: this.toOptionalObjectId(createDto.prerequisite),
+      completion_required: createDto.completion_required ?? false,
+      end_with_parent: createDto.end_with_parent ?? false,
+      start_date: startDate,
+      end_date: endDate,
+      start_time: this.normalizeOptionalTime(createDto.start_time),
+      end_time: this.normalizeOptionalTime(createDto.end_time),
       xp_completion: createDto.xp_completion,
       xp_view: createDto.xp_view,
       gems: createDto.gems,
@@ -92,6 +113,8 @@ export class ExperiencesService {
       link_text: this.normalizeOptionalString(createDto.link_text),
       link_url: this.normalizeOptionalString(createDto.link_url),
     };
+
+    this.applyStartDateLengthDefaults(payload);
 
     const experience = new this.experienceModel(payload);
     const savedExperience = await experience.save();
@@ -164,17 +187,38 @@ export class ExperiencesService {
     if (updateDto.subcategory !== undefined) {
       experience.subcategory = this.toOptionalObjectId(updateDto.subcategory);
     }
+    if (updateDto.timing_type !== undefined) {
+      experience.timing_type = updateDto.timing_type;
+    }
+    if (updateDto.delay_days !== undefined) {
+      experience.delay_days = updateDto.delay_days;
+    }
+    if (updateDto.length_days !== undefined) {
+      experience.length_days = updateDto.length_days;
+    }
+    if (updateDto.sequence !== undefined) {
+      experience.sequence = updateDto.sequence;
+    }
+    if (updateDto.prerequisite !== undefined) {
+      experience.prerequisite = this.toOptionalObjectId(updateDto.prerequisite);
+    }
+    if (updateDto.completion_required !== undefined) {
+      experience.completion_required = updateDto.completion_required;
+    }
+    if (updateDto.end_with_parent !== undefined) {
+      experience.end_with_parent = updateDto.end_with_parent;
+    }
     if (updateDto.start_date !== undefined) {
-      experience.start_date = new Date(updateDto.start_date);
+      experience.start_date = this.toOptionalDate(updateDto.start_date);
     }
     if (updateDto.start_time !== undefined) {
-      experience.start_time = this.normalizeTimeString(updateDto.start_time);
+      experience.start_time = this.normalizeOptionalTime(updateDto.start_time);
     }
     if (updateDto.end_date !== undefined) {
-      experience.end_date = new Date(updateDto.end_date);
+      experience.end_date = this.toOptionalDate(updateDto.end_date);
     }
     if (updateDto.end_time !== undefined) {
-      experience.end_time = this.normalizeTimeString(updateDto.end_time);
+      experience.end_time = this.normalizeOptionalTime(updateDto.end_time);
     }
     if (updateDto.xp_completion !== undefined) {
       experience.xp_completion = updateDto.xp_completion;
@@ -209,6 +253,8 @@ export class ExperiencesService {
       experience.link_url = this.normalizeOptionalString(updateDto.link_url);
     }
 
+    this.applyStartDateLengthDefaults(experience);
+
     await experience.save();
     await experience.populate(DEFAULT_EXPERIENCE_POPULATE);
     return experience;
@@ -240,17 +286,55 @@ export class ExperiencesService {
     return trimmed.length ? trimmed : undefined;
   }
 
-  private normalizeTimeString(value: string): string {
+  private normalizeOptionalTime(value?: string | null): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
     return value.trim();
   }
 
   private toOptionalObjectId(
     value?: string | null,
   ): Types.ObjectId | undefined {
-    if (!value) {
+    if (value === undefined || value === null || value === '') {
       return undefined;
     }
 
     return new Types.ObjectId(value);
+  }
+
+  private toOptionalDate(value?: string | Date | null): Date | undefined {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+
+    return value instanceof Date ? value : new Date(value);
+  }
+
+  private applyStartDateLengthDefaults(target: Partial<Experience>): void {
+    if (
+      target.timing_type === ExperienceTimingType.StartDateAndLength &&
+      target.start_date instanceof Date &&
+      typeof target.length_days === 'number'
+    ) {
+      target.end_date = this.calculateInclusiveEndDate(
+        target.start_date,
+        target.length_days,
+      );
+      if (!target.end_time && target.start_time) {
+        target.end_time = target.start_time;
+      }
+    }
+  }
+
+  private calculateInclusiveEndDate(
+    startDate: Date,
+    lengthDays: number,
+  ): Date {
+    const result = new Date(startDate.getTime());
+    const offset = Math.max(0, lengthDays - 1);
+    result.setUTCDate(result.getUTCDate() + offset);
+    return result;
   }
 }

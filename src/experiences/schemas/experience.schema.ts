@@ -16,6 +16,12 @@ export enum ExperienceCompletionType {
   Link = 'link',
 }
 
+export enum ExperienceTimingType {
+  DelayAfterPrevious = 'delay_after_previous',
+  StartDateAndLength = 'start_date_and_length',
+  DateRange = 'date_range',
+}
+
 export const EXPERIENCE_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 export const EXPERIENCE_TIME_FORMAT_ERROR =
   'Time must be in 24-hour HH:mm or HH:mm:ss format with leading zeros.';
@@ -118,50 +124,120 @@ export class Experience {
   subcategory?: Types.ObjectId;
 
   @ApiProperty({
+    enum: ExperienceTimingType,
+    enumName: 'ExperienceTimingType',
+    description: 'Determines how the experience availability window is calculated.',
+    default: ExperienceTimingType.DateRange,
+  })
+  @Prop({
+    type: String,
+    enum: ExperienceTimingType,
+    required: true,
+    default: ExperienceTimingType.DateRange,
+  })
+  timing_type!: ExperienceTimingType;
+
+  @ApiPropertyOptional({
+    description:
+      'Number of whole days to delay before showing the experience when timing_type is delay_after_previous.',
+    minimum: 0,
+    default: 0,
+  })
+  @Prop({ type: Number, min: 0, default: 0 })
+  delay_days!: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Inclusive number of days the experience remains available for start_date_and_length timing.',
+    minimum: 1,
+  })
+  @Prop({ type: Number, min: 1, default: undefined })
+  length_days?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Experience that must be satisfied before this one becomes available. When set the experience is considered a child.',
+    type: String,
+  })
+  @Prop({
+    type: Types.ObjectId,
+    ref: Experience.name,
+    default: undefined,
+    index: true,
+  })
+  prerequisite?: Types.ObjectId;
+
+  @ApiPropertyOptional({
+    description:
+      'Defines the ordering of experiences within a program. Lower numbers appear earlier.',
+    default: 0,
+  })
+  @Prop({ type: Number, default: 0 })
+  sequence!: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Require learners to complete the experience before the next delay can begin.',
+    default: false,
+  })
+  @Prop({ type: Boolean, default: false })
+  completion_required!: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'When true, a delayed child experience tied to a dated parent ends when the parent ends.',
+    default: false,
+  })
+  @Prop({ type: Boolean, default: false })
+  end_with_parent!: boolean;
+
+  @ApiPropertyOptional({
     description:
       'Calendar date when the experience becomes visible to learners.',
     example: '2025-09-01',
   })
-  @Prop({ type: Date, required: true })
-  start_date!: Date;
+  @Prop({ type: Date, default: undefined })
+  start_date?: Date;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: '24-hour time when the experience unlocks on the start date.',
     example: '15:30',
   })
   @Prop({
     type: String,
-    required: true,
     trim: true,
+    default: undefined,
     validate: {
-      validator: (value: string) => EXPERIENCE_TIME_PATTERN.test(value),
+      validator: (value: string | undefined) =>
+        value === undefined || EXPERIENCE_TIME_PATTERN.test(value),
       message: EXPERIENCE_TIME_FORMAT_ERROR,
     },
   })
-  start_time!: string;
+  start_time?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Calendar date when the experience expires for learners.',
     example: '2025-09-30',
   })
-  @Prop({ type: Date, required: true })
-  end_date!: Date;
+  @Prop({ type: Date, default: undefined })
+  end_date?: Date;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
       '24-hour time on the end date when the experience moves to past due.',
     example: '23:59',
   })
   @Prop({
     type: String,
-    required: true,
     trim: true,
+    default: undefined,
     validate: {
-      validator: (value: string) => EXPERIENCE_TIME_PATTERN.test(value),
+      validator: (value: string | undefined) =>
+        value === undefined || EXPERIENCE_TIME_PATTERN.test(value),
       message: EXPERIENCE_TIME_FORMAT_ERROR,
     },
   })
-  end_time!: string;
+  end_time?: string;
 
   @ApiProperty({
     description: 'XP awarded when the learner submits the required evidence.',
@@ -243,6 +319,16 @@ ExperienceSchema.index(
   { name: 'experience_date_window' },
 );
 
+ExperienceSchema.index(
+  { organization: 1, sequence: 1 },
+  { name: 'experience_sequence_order' },
+);
+
+ExperienceSchema.index(
+  { prerequisite: 1 },
+  { name: 'experience_prerequisite_lookup' },
+);
+
 ExperienceSchema.pre('validate', function (next) {
   const doc = this as ExperienceDocument;
 
@@ -256,17 +342,96 @@ ExperienceSchema.pre('validate', function (next) {
     );
   }
 
-  if (doc.end_date < doc.start_date) {
+  const timingType = doc.timing_type ?? ExperienceTimingType.DateRange;
+
+  if (timingType === ExperienceTimingType.DelayAfterPrevious) {
+    if (!Number.isInteger(doc.delay_days) || doc.delay_days < 0) {
+      doc.invalidate(
+        'delay_days',
+        'delay_days must be a non-negative integer when timing_type is delay_after_previous.',
+      );
+    }
+  } else if (timingType === ExperienceTimingType.StartDateAndLength) {
+    if (!doc.start_date) {
+      doc.invalidate(
+        'start_date',
+        'start_date is required when timing_type is start_date_and_length.',
+      );
+    }
+
+    if (!doc.start_time) {
+      doc.invalidate(
+        'start_time',
+        'start_time is required when timing_type is start_date_and_length.',
+      );
+    }
+
+    if (
+      doc.length_days === undefined ||
+      !Number.isInteger(doc.length_days) ||
+      doc.length_days < 1
+    ) {
+      doc.invalidate(
+        'length_days',
+        'length_days must be an integer >= 1 when timing_type is start_date_and_length.',
+      );
+    }
+
+    if (doc.start_date && typeof doc.length_days === 'number') {
+      const derivedEndDate = calculateInclusiveEndDate(doc.start_date, doc.length_days);
+      doc.end_date = derivedEndDate;
+      if (!doc.end_time && doc.start_time) {
+        doc.end_time = doc.start_time;
+      }
+    }
+  } else if (timingType === ExperienceTimingType.DateRange) {
+    if (!doc.start_date) {
+      doc.invalidate(
+        'start_date',
+        'start_date is required when timing_type is date_range.',
+      );
+    }
+
+    if (!doc.start_time) {
+      doc.invalidate(
+        'start_time',
+        'start_time is required when timing_type is date_range.',
+      );
+    }
+
+    if (!doc.end_date) {
+      doc.invalidate(
+        'end_date',
+        'end_date is required when timing_type is date_range.',
+      );
+    }
+
+    if (!doc.end_time) {
+      doc.invalidate(
+        'end_time',
+        'end_time is required when timing_type is date_range.',
+      );
+    }
+  }
+
+  if (doc.start_date && doc.end_date && doc.end_date < doc.start_date) {
     doc.invalidate('end_date', 'end_date must be on or after start_date.');
   }
 
-  if (!EXPERIENCE_TIME_PATTERN.test(doc.start_time)) {
+  if (doc.start_time && !EXPERIENCE_TIME_PATTERN.test(doc.start_time)) {
     doc.invalidate('start_time', EXPERIENCE_TIME_FORMAT_ERROR);
   }
 
-  if (!EXPERIENCE_TIME_PATTERN.test(doc.end_time)) {
+  if (doc.end_time && !EXPERIENCE_TIME_PATTERN.test(doc.end_time)) {
     doc.invalidate('end_time', EXPERIENCE_TIME_FORMAT_ERROR);
   }
 
   next();
 });
+
+function calculateInclusiveEndDate(startDate: Date, lengthDays: number): Date {
+  const result = new Date(startDate.getTime());
+  const offset = Math.max(0, lengthDays - 1);
+  result.setUTCDate(result.getUTCDate() + offset);
+  return result;
+}
