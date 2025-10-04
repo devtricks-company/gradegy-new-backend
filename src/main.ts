@@ -35,6 +35,7 @@ async function bootstrap() {
     const swaggerPath = configService.get<string>('swagger.path') ?? 'docs';
     SwaggerModule.setup(swaggerPath, app, document, {
       swaggerOptions: { persistAuthorization: true },
+      yamlDocumentUrl:'schema'
     });
   }
 
