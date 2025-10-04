@@ -18,7 +18,7 @@ import type {
   AuthTokens,
 } from './interfaces/auth-response.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { UserDocument } from '../users/schemas/user.schema';
+import { UserDocument, UserRole } from '../users/schemas/user.schema';
 
 const BCRYPT_SALT_ROUNDS = 12;
 const DEFAULT_REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -89,6 +89,33 @@ export class AuthService {
     provider: OAuthProvider,
     profile: Omit<OAuthUserInput, 'provider'>,
   ): Promise<AuthenticatedUser> {
+    // Check if user exists by provider ID or email
+    const existingUserByProvider = profile.providerId
+      ? await this.usersService.findByProvider(provider, profile.providerId)
+      : null;
+
+    const existingUserByEmail = profile.email
+      ? await this.usersService.findByEmail(profile.email)
+      : null;
+
+    const existingUser = existingUserByProvider || existingUserByEmail;
+
+    // Check if the user has an admin role (ultra, super, or admin)
+    if (existingUser) {
+      const isAdminRole = [
+        UserRole.Ultra,
+        UserRole.Super,
+        UserRole.Admin,
+      ].includes(existingUser.role);
+
+      if (isAdminRole) {
+        throw new UnauthorizedException(
+          'Admin users must login using email and password.',
+        );
+      }
+    }
+
+    // Proceed with normal OAuth user creation/update
     const user = await this.usersService.upsertOAuthUser({
       provider,
       ...profile,
