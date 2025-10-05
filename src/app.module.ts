@@ -20,13 +20,15 @@ import { ExperiencesModule } from './experiences/experiences.module';
 import { UniversitiesModule } from './universities/universities.module';
 import { AccessControlModule } from './access-control/access-control.module';
 import { ExperienceProgressModule } from './experience-progress/experience-progress.module';
+import { AzurestorageModule } from './azurestorage/azurestorage.module';
+import azureStorageConfig from './config/azure.storage.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      load: [authConfig, mongodbConfig, swaggerConfig],
+      load: [authConfig, mongodbConfig, swaggerConfig, azureStorageConfig],
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -49,6 +51,7 @@ import { ExperienceProgressModule } from './experience-progress/experience-progr
     UniversitiesModule,
     AccessControlModule,
     AuthModule,
+    AzurestorageModule,
   ],
   controllers: [AppController],
   providers: [

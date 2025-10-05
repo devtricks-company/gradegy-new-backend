@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -65,6 +66,63 @@ export class OrganizationsController {
         },
       },
     },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number to retrieve (>= 1). Alias: currentPage.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page. Aliases: pageSize, perPage, take.',
+    example: 25,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of records to skip before fetching results. Alias: skip.',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Full-text search applied to title and short_title. Alias: q.',
+    example: 'academy',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    type: String,
+    description: 'Comma separated sort definition. Prefix with - for descending. Allowed fields: title, short_title, organization_type, lead_contact, createdAt, updatedAt.',
+    example: 'title,-createdAt',
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    style: 'deepObject',
+    explode: true,
+    description: 'Filter definitions using deep object syntax, e.g. filters[organization_type]=secondary & filters[createdAt][gte]=2024-01-01. Supported fields: title, short_title, organization_type, lead_contact, ufcs_member, paid, reward_system, survey_system, school_district, university, is_active, createdAt, updatedAt. Operators vary per field: eq, in, nin, gt, gte, lt, lte.',
+    schema: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    example: {
+      organization_type: 'secondary',
+      createdAt: { 'gte': '2024-01-01' },
+    },
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    type: String,
+    description: 'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
+    example: '{"organization_type":"secondary"}',
   })
   findAll(@Query() query: Record<string, unknown>) {
     return this.organizationsService.findAll(query);
