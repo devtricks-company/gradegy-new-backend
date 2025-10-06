@@ -23,7 +23,8 @@ import {
 import { CreateUniversityDto } from './dto/create-university.dto';
 import { UpdateUniversityDto } from './dto/update-university.dto';
 import { UniversitiesService } from './universities.service';
-import { University } from './schemas/university.schema';
+import { ExecuteQueryResult } from '../common/utils/mongoose-query.util';
+import { University, UniversityDocument } from './schemas/university.schema';
 
 @ApiTags('universities')
 @ApiExtraModels(University)
@@ -126,7 +127,7 @@ export class UniversitiesController {
     description: 'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
     example: '{"active":true}',
   })
-  findAll(@Query() query: Record<string, unknown>) {
+  findAll(@Query() query: Record<string, unknown>): Promise<ExecuteQueryResult<UniversityDocument>> {
     return this.universitiesService.findAll(query);
   }
 
@@ -176,3 +177,6 @@ export class UniversitiesController {
     return this.universitiesService.remove(id);
   }
 }
+
+
+

@@ -10,12 +10,14 @@ import {
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { CreateSchoolDistrictDto } from './dto/create-school-district.dto';
 import { UpdateSchoolDistrictDto } from './dto/update-school-district.dto';
@@ -27,6 +29,7 @@ import { SchoolDistrictsService } from './school-districts.service';
 import { ExecuteQueryResult } from 'src/common/utils/mongoose-query.util';
 
 @ApiTags('school-districts')
+@ApiExtraModels(SchoolDistrict)
 @Controller('school-districts')
 export class SchoolDistrictsController {
   constructor(
@@ -46,8 +49,27 @@ export class SchoolDistrictsController {
   @Get()
   @ApiOperation({ summary: 'Retrieve all school districts' })
   @ApiOkResponse({
-    type: [SchoolDistrict],
     description: 'School districts retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: getSchemaPath(SchoolDistrict) },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 25 },
+            totalItems: { type: 'integer', example: 100 },
+            totalPages: { type: 'integer', example: 4 },
+            hasNextPage: { type: 'boolean', example: true },
+            hasPreviousPage: { type: 'boolean', example: false },
+          },
+        },
+      },
+    },
   })
   @ApiQuery({
     name: 'page',
@@ -165,3 +187,4 @@ export class SchoolDistrictsController {
     return this.schoolDistrictsService.remove(id);
   }
 }
+
