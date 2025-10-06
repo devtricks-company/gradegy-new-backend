@@ -16,13 +16,15 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
 import { CreateUniversityDto } from './dto/create-university.dto';
 import { UpdateUniversityDto } from './dto/update-university.dto';
 import { UniversitiesService } from './universities.service';
-import { University } from './schemas/university.schema';
+import { ExecuteQueryResult } from '../common/utils/mongoose-query.util';
+import { University, UniversityDocument } from './schemas/university.schema';
 
 @ApiTags('universities')
 @ApiExtraModels(University)
@@ -66,7 +68,66 @@ export class UniversitiesController {
       },
     },
   })
-  findAll(@Query() query: Record<string, unknown>) {
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number to retrieve (>= 1). Alias: currentPage.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page. Aliases: pageSize, perPage, take.',
+    example: 25,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of records to skip before fetching results. Alias: skip.',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Full-text search applied to instnm, united_id, city, county_name. Alias: q.',
+    example: 'Massachusetts',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    type: String,
+    description: 'Comma separated sort definition. Prefix with - for descending. Allowed fields: instnm, united_id, city, stabbr, county_name, createdAt, updatedAt.',
+    example: 'instnm,-createdAt',
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    style: 'deepObject',
+    explode: true,
+    description: 'Filter definitions using deep object syntax, e.g. filters[stabbr]=MA & filters[createdAt][gte]=2024-01-01. Supported fields: united_id, instnm, city, stabbr, zip, county_name, active, createdAt, updatedAt.',
+    schema: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    example: {
+      stabbr: 'MA',
+      zip: { 'in': ['02139', '10027'] },
+      active: true,
+      createdAt: { 'gte': '2024-01-01' },
+    },
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    type: String,
+    description: 'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
+    example: '{"active":true}',
+  })
+  findAll(@Query() query: Record<string, unknown>): Promise<ExecuteQueryResult<UniversityDocument>> {
     return this.universitiesService.findAll(query);
   }
 
@@ -116,3 +177,6 @@ export class UniversitiesController {
     return this.universitiesService.remove(id);
   }
 }
+
+
+
