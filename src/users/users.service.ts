@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
+import {
+  ExecuteQueryResult,
+  MongooseQueryConfig,
+  executeMongooseQuery,
+} from '../common/utils/mongoose-query.util';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument, UserRole } from './schemas/user.schema';
 
 export type OAuthProvider = 'google' | 'snapchat';
 
@@ -15,6 +20,44 @@ export interface OAuthUserInput {
   lastName?: string;
   avatarUrl?: string;
 }
+
+const ADMINISTRATIVE_ROLES: UserRole[] = [
+  UserRole.Ultra,
+  UserRole.Super,
+  UserRole.Admin,
+];
+
+const ADMINISTRATIVE_USERS_QUERY_CONFIG: MongooseQueryConfig<UserDocument> = {
+  searchableFields: ['firstName', 'lastName', 'email'],
+  filterableFields: {
+    firstName: { type: 'string', operators: ['eq', 'in'] },
+    lastName: { type: 'string', operators: ['eq', 'in'] },
+    email: {
+      type: 'string',
+      operators: ['eq', 'in'],
+      allowCommaSeparatedArrays: true,
+    },
+    role: { type: 'string', operators: ['eq', 'in'] },
+    isActive: { type: 'boolean', operators: ['eq'] },
+    lastLoginAt: { type: 'date', operators: ['gte', 'lte'] },
+    createdAt: { type: 'date', operators: ['gte', 'lte'] },
+    updatedAt: { type: 'date', operators: ['gte', 'lte'] },
+  },
+  allowedSortFields: [
+    'firstName',
+    'lastName',
+    'email',
+    'role',
+    'lastLoginAt',
+    'createdAt',
+    'updatedAt',
+  ],
+  defaultSort: { createdAt: -1 },
+  defaultLimit: 25,
+  maxLimit: 100,
+  lean: false,
+  baseFilter: { role: { $in: ADMINISTRATIVE_ROLES } },
+};
 
 @Injectable()
 export class UsersService {
@@ -35,6 +78,16 @@ export class UsersService {
 
   async findAll(): Promise<UserDocument[]> {
     return this.userModel.find().exec();
+  }
+
+  async findAllAdministrative(
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<UserDocument>> {
+    return executeMongooseQuery<UserDocument>({
+      model: this.userModel,
+      rawQuery,
+      config: ADMINISTRATIVE_USERS_QUERY_CONFIG,
+    });
   }
 
   async findOne(id: string): Promise<UserDocument> {
