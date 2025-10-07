@@ -256,7 +256,20 @@ export class OrganizationsService {
   }
 
   async findOne(id: string): Promise<OrganizationDocument> {
-    const organization = await this.organizationModel.findById(id).exec();
+    const organization = await this.organizationModel
+      .findById(id)
+      .populate([
+        {
+          path: 'lead_contact',
+          select: 'firstName lastName email role isActive',
+        },
+        {
+          path: 'school_district',
+          select: 'agancy_name state_name state_agancy_id',
+        },
+        { path: 'university' },
+      ])
+      .exec();
 
     if (!organization) {
       throw new NotFoundException(`Organization with id "${id}" not found.`);

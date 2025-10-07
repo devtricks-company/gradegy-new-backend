@@ -24,9 +24,12 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationsService } from './organizations.service';
 import { Organization } from './schemas/organization.schema';
+import { User } from '../users/schemas/user.schema';
+import { SchoolDistrict } from '../school-districts/schemas/school-district.schema';
+import { University } from '../universities/schemas/university.schema';
 
 @ApiTags('organizations')
-@ApiExtraModels(Organization)
+@ApiExtraModels(Organization, User, SchoolDistrict, University)
 @Controller('organizations')
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
@@ -135,8 +138,30 @@ export class OrganizationsController {
     description: 'MongoDB identifier of the organization.',
   })
   @ApiOkResponse({
-    type: Organization,
     description: 'Organization retrieved successfully.',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(Organization) },
+        {
+          type: 'object',
+          properties: {
+            lead_contact: { $ref: getSchemaPath(User) },
+            school_district: {
+              oneOf: [
+                { $ref: getSchemaPath(SchoolDistrict) },
+                { type: 'null' },
+              ],
+            },
+            university: {
+              oneOf: [
+                { $ref: getSchemaPath(University) },
+                { type: 'null' },
+              ],
+            },
+          },
+        },
+      ],
+    },
   })
   @ApiNotFoundResponse({ description: 'Organization not found.' })
   findOne(@Param('id') id: string) {
