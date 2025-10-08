@@ -126,17 +126,18 @@ export class ProjectsService {
 
   async findByOrganizationId(
     organizationId: string,
-  ): Promise<ProjectDocument[]> {
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<ProjectDocument>> {
     if (!Types.ObjectId.isValid(organizationId)) {
       throw new BadRequestException('Invalid organization id format.');
     }
 
-    const projects = await this.projectModel
-      .find({ organizations: new Types.ObjectId(organizationId) })
-      .populate(DEFAULT_PROJECT_POPULATE)
-      .exec();
-
-    return projects;
+    return executeMongooseQuery<ProjectDocument>({
+      model: this.projectModel,
+      rawQuery,
+      config: PROJECT_QUERY_CONFIG,
+      baseFilter: { organizations: new Types.ObjectId(organizationId) },
+    });
   }
 
   async findOne(id: string): Promise<ProjectDocument> {

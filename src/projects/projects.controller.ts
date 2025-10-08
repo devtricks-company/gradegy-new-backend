@@ -15,6 +15,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -75,12 +76,93 @@ export class ProjectsController {
     description: 'MongoDB identifier of the organization.',
   })
   @ApiOkResponse({
-    type: Project,
-    isArray: true,
     description: 'Projects retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: getSchemaPath(Project) },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 25 },
+            totalItems: { type: 'integer', example: 50 },
+            totalPages: { type: 'integer', example: 2 },
+            hasNextPage: { type: 'boolean', example: false },
+            hasPreviousPage: { type: 'boolean', example: false },
+          },
+        },
+      },
+    },
   })
-  findByOrganization(@Param('organizationId') organizationId: string) {
-    return this.projectsService.findByOrganizationId(organizationId);
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number to retrieve (>= 1). Alias: currentPage.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page. Aliases: pageSize, perPage, take.',
+    example: 25,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of records to skip before fetching results. Alias: skip.',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Free-text search applied to project title. Alias: q.',
+    example: 'literacy',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    type: String,
+    description:
+      'Comma separated sort definition. Prefix with - for descending. Allowed fields: title, project_type, condition, status, createdAt, updatedAt. Alias: orderBy.',
+    example: 'title,-createdAt',
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    style: 'deepObject',
+    explode: true,
+    description:
+      'Filter definitions using deep object syntax, e.g. filters[status]=Active & filters[createdAt][gte]=2024-01-01. Supported fields: title, project_type, condition, status, reward_system, survey_system, is_active, organizations, school_district, university, createdAt, updatedAt. Operators vary per field and include eq, in, gte, lte.',
+    schema: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    example: {
+      status: 'Active',
+      createdAt: { gte: '2024-01-01' },
+    },
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    type: String,
+    description:
+      'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
+    example: '{"status":["Active","Planned"]}',
+  })
+  findByOrganization(
+    @Param('organizationId') organizationId: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    return this.projectsService.findByOrganizationId(organizationId, query);
   }
 
   @Get(':id')
