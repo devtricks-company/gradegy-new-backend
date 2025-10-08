@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PopulateOptions, Types } from 'mongoose';
 import {
@@ -75,6 +79,22 @@ export class CategoriesService {
       model: this.categoryModel,
       rawQuery,
       config: CATEGORY_QUERY_CONFIG,
+    });
+  }
+
+  async findByProjectId(
+    projectId: string,
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<CategoryDocument>> {
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new BadRequestException('Invalid project id format.');
+    }
+
+    return executeMongooseQuery<CategoryDocument>({
+      model: this.categoryModel,
+      rawQuery,
+      config: CATEGORY_QUERY_CONFIG,
+      baseFilter: { project: new Types.ObjectId(projectId) },
     });
   }
 

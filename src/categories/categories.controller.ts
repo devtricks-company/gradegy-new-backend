@@ -15,6 +15,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -66,6 +67,102 @@ export class CategoriesController {
   })
   findAll(@Query() query: Record<string, unknown>) {
     return this.categoriesService.findAll(query);
+  }
+
+  @Get('project/:projectId')
+  @ApiOperation({ summary: 'Retrieve categories associated with a project' })
+  @ApiParam({
+    name: 'projectId',
+    description: 'MongoDB identifier of the project.',
+  })
+  @ApiOkResponse({
+    description: 'Categories retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: getSchemaPath(Category) },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 25 },
+            totalItems: { type: 'integer', example: 50 },
+            totalPages: { type: 'integer', example: 2 },
+            hasNextPage: { type: 'boolean', example: false },
+            hasPreviousPage: { type: 'boolean', example: false },
+          },
+        },
+      },
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number to retrieve (>= 1). Alias: currentPage.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page. Aliases: pageSize, perPage, take.',
+    example: 25,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Number of records to skip before fetching results. Alias: skip.',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Free-text search applied to category title and school_level. Alias: q.',
+    example: 'STEM',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    type: String,
+    description:
+      'Comma separated sort definition. Prefix with - for descending. Allowed fields: title, school_level, createdAt, updatedAt. Alias: orderBy.',
+    example: 'title,-createdAt',
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    style: 'deepObject',
+    explode: true,
+    description:
+      'Filter definitions using deep object syntax, e.g. filters[school_level]=high_school & filters[createdAt][gte]=2024-01-01. Supported fields: title, school_level, localize_award, coins, store, display_project, is_active, project, highschool, createdAt, updatedAt. Operators vary per field and include eq, in, gte, lte.',
+    schema: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    example: {
+      school_level: 'high_school',
+      is_active: true,
+    },
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    type: String,
+    description:
+      'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
+    example: '{"school_level":["middle_school","high_school"]}',
+  })
+  findByProject(
+    @Param('projectId') projectId: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    return this.categoriesService.findByProjectId(projectId, query);
   }
 
   @Get(':id')
