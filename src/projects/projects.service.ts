@@ -143,7 +143,17 @@ export class ProjectsService {
   async findOne(id: string): Promise<ProjectDocument> {
     const project = await this.projectModel
       .findById(id)
-      .populate(DEFAULT_PROJECT_POPULATE)
+      .populate([
+        {
+          path: 'school_district',
+          select: 'agancy_name state_name state_agancy_id',
+        },
+        { path: 'university' },
+        {
+          path: 'organizations',
+          select: 'title organization_type is_active',
+        },
+      ])
       .exec();
 
     if (!project) {

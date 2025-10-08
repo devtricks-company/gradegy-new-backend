@@ -23,9 +23,12 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { Project } from './schemas/project.schema';
 import { ProjectsService } from './projects.service';
+import { Organization } from '../organizations/schemas/organization.schema';
+import { SchoolDistrict } from '../school-districts/schemas/school-district.schema';
+import { University } from '../universities/schemas/university.schema';
 
 @ApiTags('projects')
-@ApiExtraModels(Project)
+@ApiExtraModels(Project, Organization, SchoolDistrict, University)
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -172,8 +175,33 @@ export class ProjectsController {
     description: 'MongoDB identifier of the project.',
   })
   @ApiOkResponse({
-    type: Project,
     description: 'Project retrieved successfully.',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(Project) },
+        {
+          type: 'object',
+          properties: {
+            organizations: {
+              type: 'array',
+              items: { $ref: getSchemaPath(Organization) },
+            },
+            school_district: {
+              oneOf: [
+                { $ref: getSchemaPath(SchoolDistrict) },
+                { type: 'null' },
+              ],
+            },
+            university: {
+              oneOf: [
+                { $ref: getSchemaPath(University) },
+                { type: 'null' },
+              ],
+            },
+          },
+        },
+      ],
+    },
   })
   @ApiNotFoundResponse({ description: 'Project not found.' })
   findOne(@Param('id') id: string) {
