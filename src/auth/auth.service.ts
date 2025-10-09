@@ -11,6 +11,7 @@ import {
   OAuthUserInput,
   OAuthProvider,
 } from '../users/users.service';
+import { RegisterAdminDto } from './dto/register-admin.dto';
 import { RegisterLocalDto } from './dto/register-local.dto';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import type {
@@ -59,6 +60,28 @@ export class AuthService {
 
     await this.usersService.recordLogin(userDocument.id);
     return this.buildAuthResponse(this.mapUser(userDocument));
+  }
+
+  async registerAdmin(dto: RegisterAdminDto): Promise<AuthenticatedUser> {
+    const existingUser = await this.usersService.findByEmail(dto.email);
+
+    if (existingUser) {
+      throw new ConflictException('Email is already registered.');
+    }
+
+    const hashedPassword = await hash(dto.password, BCRYPT_SALT_ROUNDS);
+    const userDocument = await this.usersService.create({
+      email: dto.email,
+      password: hashedPassword,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      phone: dto.phone,
+      avatarUrl: dto.avatarUrl,
+      jobs: dto.jobs,
+      role: dto.role,
+    });
+
+    return this.mapUser(userDocument);
   }
 
   async validateLocalUser(
