@@ -80,6 +80,21 @@ export class SubcategoriesService {
     });
   }
 
+  async findAllByCategory(
+    categoryId: string,
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<SubcategoryDocument>> {
+    const categoryObjectId = this.toObjectId(categoryId);
+    await this.ensureCategoryExists(categoryObjectId);
+
+    return executeMongooseQuery<SubcategoryDocument>({
+      model: this.subcategoryModel,
+      rawQuery,
+      config: SUBCATEGORY_QUERY_CONFIG,
+      baseFilter: { category: categoryObjectId },
+    });
+  }
+
   async findOne(id: string): Promise<SubcategoryDocument> {
     const subcategory = await this.subcategoryModel
       .findById(id)
