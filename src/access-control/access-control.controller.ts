@@ -46,6 +46,19 @@ export class AccessControlController {
     return this.accessControlService.createAssignment(createDto);
   }
 
+  @Get('assignments/:userId')
+  @Roles(UserRole.Ultra, UserRole.Super, UserRole.Admin)
+  @ApiOperation({ summary: 'List assignments for a specific user.' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User identifier.',
+    type: String,
+  })
+  @ApiOkResponse({ type: UserAssignment, isArray: true })
+  async listAssignments(@Param('userId') userId: string) {
+    return this.accessControlService.listAssignmentsForUser(userId);
+  }
+
   @Get('projects')
   @ApiOperation({ summary: 'List projects the current user can access.' })
   @ApiOkResponse({ type: Project, isArray: true })
