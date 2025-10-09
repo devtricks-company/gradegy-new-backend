@@ -3,8 +3,10 @@ import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { Roles } from './decorators/roles.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterAdminDto } from './dto/register-admin.dto';
 import { RegisterLocalDto } from './dto/register-local.dto';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -12,6 +14,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { SnapchatAuthGuard } from './guards/snapchat-auth.guard';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import type { AuthResponse } from './interfaces/auth-response.interface';
+import { UserRole } from '../users/schemas/user.schema';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -26,6 +29,16 @@ export class AuthController {
   })
   register(@Body() dto: RegisterLocalDto): Promise<AuthResponse> {
     return this.authService.registerLocal(dto);
+  }
+
+  @Post('register/admin')
+  @Roles(UserRole.Ultra, UserRole.Super, UserRole.Admin)
+  @ApiOperation({ summary: 'Register a new administrative user.' })
+  @ApiOkResponse({
+    description: 'Administrative user registered successfully.',
+  })
+  registerAdmin(@Body() dto: RegisterAdminDto): Promise<AuthenticatedUser> {
+    return this.authService.registerAdmin(dto);
   }
 
   @Public()
