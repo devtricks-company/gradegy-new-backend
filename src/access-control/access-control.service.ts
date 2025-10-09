@@ -18,7 +18,7 @@ import {
   Subcategory,
   SubcategoryDocument,
 } from '../subcategories/schemas/subcategory.schema';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { User, UserDocument, UserRole } from '../users/schemas/user.schema';
 import { AccessScope } from './interfaces/access-scope.interface';
 import { CreateUserAssignmentDto } from './dto/create-user-assignment.dto';
 import {
@@ -302,6 +302,20 @@ export class AccessControlService {
   }
 
   private async buildAccessScope(userId: string): Promise<AccessScope> {
+    const user = await this.userModel
+      .findById(this.toObjectId(userId, 'user'))
+      .select('role')
+      .lean()
+      .exec();
+
+    if (!user) {
+      throw new BadRequestException(`User with id "${userId}" not found.`);
+    }
+
+    if (user.role === UserRole.Ultra) {
+      return this.buildUltraAccessScope();
+    }
+
     const assignments = await this.assignmentModel
       .find({ user: this.toObjectId(userId, 'user') })
       .lean()
@@ -351,9 +365,64 @@ export class AccessControlService {
       scope.subcategoryIds.add(subcategoryId);
     }
 
+    if (user.role === UserRole.Super) {
+      for (const organizationId of scope.organizationIds) {
+        scope.orgWideOrganizationIds.add(organizationId);
+      }
+    }
+
     await this.expandFromOrganizations(scope);
     await this.expandFromProjects(scope);
     await this.expandFromCategories(scope);
+
+    return this.freezeScope(scope);
+  }
+
+  private async buildUltraAccessScope(): Promise<AccessScope> {
+    const [organizations, projects, categories, subcategories] =
+      await Promise.all([
+        this.organizationModel.find().select('_id').lean().exec(),
+        this.projectModel.find().select('_id').lean().exec(),
+        this.categoryModel.find().select('_id').lean().exec(),
+        this.subcategoryModel.find().select('_id').lean().exec(),
+      ]);
+
+    const scope: MutableAccessScope = {
+      organizationIds: new Set<string>(),
+      orgWideOrganizationIds: new Set<string>(),
+      projectIds: new Set<string>(),
+      categoryIds: new Set<string>(),
+      subcategoryIds: new Set<string>(),
+    };
+
+    for (const organization of organizations) {
+      const id = this.extractId(organization._id);
+      if (id) {
+        scope.organizationIds.add(id);
+        scope.orgWideOrganizationIds.add(id);
+      }
+    }
+
+    for (const project of projects) {
+      const id = this.extractId(project._id);
+      if (id) {
+        scope.projectIds.add(id);
+      }
+    }
+
+    for (const category of categories) {
+      const id = this.extractId(category._id);
+      if (id) {
+        scope.categoryIds.add(id);
+      }
+    }
+
+    for (const subcategory of subcategories) {
+      const id = this.extractId(subcategory._id);
+      if (id) {
+        scope.subcategoryIds.add(id);
+      }
+    }
 
     return this.freezeScope(scope);
   }
