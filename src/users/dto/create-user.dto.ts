@@ -50,6 +50,22 @@ export class CreateUserDto {
   avatarUrl?: string;
 
   @ApiPropertyOptional({
+    description: 'Contact phone number.',
+    example: '+1-555-123-4567',
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Jobs or roles associated with the user.',
+    example: 'Math tutor',
+  })
+  @IsOptional()
+  @IsString()
+  jobs?: string;
+
+  @ApiPropertyOptional({
     enum: UserRole,
     enumName: 'UserRole',
     description: 'Role assigned to the user.',

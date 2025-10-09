@@ -28,7 +28,7 @@ const ADMINISTRATIVE_ROLES: UserRole[] = [
 ];
 
 const ADMINISTRATIVE_USERS_QUERY_CONFIG: MongooseQueryConfig<UserDocument> = {
-  searchableFields: ['firstName', 'lastName', 'email'],
+  searchableFields: ['firstName', 'lastName', 'email', 'phone', 'jobs'],
   filterableFields: {
     firstName: { type: 'string', operators: ['eq', 'in'] },
     lastName: { type: 'string', operators: ['eq', 'in'] },
@@ -37,6 +37,8 @@ const ADMINISTRATIVE_USERS_QUERY_CONFIG: MongooseQueryConfig<UserDocument> = {
       operators: ['eq', 'in'],
       allowCommaSeparatedArrays: true,
     },
+    phone: { type: 'string', operators: ['eq', 'in'] },
+    jobs: { type: 'string', operators: ['eq', 'in'] },
     role: { type: 'string', operators: ['eq', 'in'] },
     isActive: { type: 'boolean', operators: ['eq'] },
     lastLoginAt: { type: 'date', operators: ['gte', 'lte'] },
@@ -47,6 +49,8 @@ const ADMINISTRATIVE_USERS_QUERY_CONFIG: MongooseQueryConfig<UserDocument> = {
     'firstName',
     'lastName',
     'email',
+    'phone',
+    'jobs',
     'role',
     'lastLoginAt',
     'createdAt',

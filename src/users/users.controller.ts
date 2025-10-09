@@ -101,7 +101,7 @@ export class UsersController {
     required: false,
     type: String,
     description:
-      'Free-text search applied to firstName, lastName, and email. Alias: q.',
+      'Free-text search applied to firstName, lastName, email, phone, and jobs. Alias: q.',
     example: 'john',
   })
   @ApiQuery({
@@ -109,7 +109,7 @@ export class UsersController {
     required: false,
     type: String,
     description:
-      'Comma separated sort definition. Prefix with - for descending. Allowed fields: firstName, lastName, email, role, lastLoginAt, createdAt, updatedAt.',
+      'Comma separated sort definition. Prefix with - for descending. Allowed fields: firstName, lastName, email, phone, jobs, role, lastLoginAt, createdAt, updatedAt.',
     example: 'lastName,-createdAt',
   })
   @ApiQuery({
@@ -118,7 +118,7 @@ export class UsersController {
     style: 'deepObject',
     explode: true,
     description:
-      'Filter definitions using deep object syntax, e.g. filters[role]=admin & filters[createdAt][gte]=2024-01-01. Supported fields: firstName, lastName, email, role, isActive, lastLoginAt, createdAt, updatedAt. Operators vary per field: eq, in, gte, lte.',
+      'Filter definitions using deep object syntax, e.g. filters[role]=admin & filters[createdAt][gte]=2024-01-01. Supported fields: firstName, lastName, email, phone, jobs, role, isActive, lastLoginAt, createdAt, updatedAt. Operators vary per field: eq, in, gte, lte.',
     schema: {
       type: 'object',
       additionalProperties: true,

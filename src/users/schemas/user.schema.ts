@@ -39,6 +39,12 @@ export class User {
   @Prop({ type: String })
   avatarUrl?: string;
 
+  @Prop({ type: String, trim: true })
+  phone?: string;
+
+  @Prop({ type: String, trim: true })
+  jobs?: string;
+
   @Prop({ type: String, enum: UserRole, default: UserRole.Student })
   role!: UserRole;
 
