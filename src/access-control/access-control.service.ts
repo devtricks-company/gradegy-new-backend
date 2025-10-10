@@ -47,6 +47,13 @@ const SUBCATEGORY_SCOPE_POPULATE: PopulateOptions[] = [
   { path: 'category', select: 'title is_active project' },
 ];
 
+const USER_ASSIGNMENT_POPULATE: PopulateOptions[] = [
+  { path: 'organization', select: 'title organization_type is_active' },
+  { path: 'project', select: 'title status is_active' },
+  { path: 'category', select: 'title is_active project' },
+  { path: 'subcategory', select: 'title is_active category' },
+];
+
 interface MutableAccessScope {
   organizationIds: Set<string>;
   orgWideOrganizationIds: Set<string>;
@@ -148,6 +155,43 @@ export class AccessControlService {
       }
       throw error;
     }
+  }
+
+  async listAssignmentsForUser(
+    userId: string,
+  ): Promise<UserAssignmentDocument[]> {
+    const normalizedId = this.normalizeId(userId, 'user');
+    await this.ensureUserExists(normalizedId);
+
+    return this.assignmentModel
+      .find({ user: this.toObjectId(normalizedId, 'user') })
+      .sort({ createdAt: -1 })
+      .populate(USER_ASSIGNMENT_POPULATE)
+      .exec();
+  }
+
+  async removeAssignment(
+    assignmentId: string,
+  ): Promise<UserAssignmentDocument> {
+    const normalizedId = this.normalizeId(assignmentId, 'assignment');
+
+    const assignment = await this.assignmentModel
+      .findByIdAndDelete(this.toObjectId(normalizedId, 'assignment'))
+      .populate(USER_ASSIGNMENT_POPULATE)
+      .exec();
+
+    if (!assignment) {
+      throw new BadRequestException(
+        `Assignment with id "${assignmentId}" not found.`,
+      );
+    }
+
+    const userId = this.extractId(assignment.user);
+    if (userId) {
+      this.invalidateScopeForUser(userId);
+    }
+
+    return assignment;
   }
 
   async listProjectsForUser(userId: string): Promise<ProjectDocument[]> {
