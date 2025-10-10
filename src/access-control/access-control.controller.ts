@@ -21,6 +21,7 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { ExecuteQueryResult } from '../common/utils/mongoose-query.util';
 import { CreateSubcategoryDto } from '../subcategories/dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from '../subcategories/dto/update-subcategory.dto';
 import { Category } from '../categories/schemas/category.schema';
@@ -33,6 +34,7 @@ import { CreateUserAssignmentDto } from './dto/create-user-assignment.dto';
 import { RegisterStudentWithAccessDto } from './dto/register-student-with-access.dto';
 import { UserAssignment } from './schemas/user-assignment.schema';
 import { AccessControlService } from './access-control.service';
+import { ScopedStudentWithAssignments } from './interfaces/scoped-student-with-assignments.interface';
 
 @ApiTags('access-control')
 @ApiExtraModels(UserAssignment, User)
@@ -73,6 +75,49 @@ export class AccessControlController {
     @Body() registerDto: RegisterStudentWithAccessDto,
   ) {
     return this.accessControlService.registerStudentWithAccess(registerDto);
+  }
+
+  @Get('students')
+  @Roles(UserRole.Ultra, UserRole.Super, UserRole.Admin)
+  @ApiOperation({
+    summary: 'List students accessible to the current user within their scope.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              user: { $ref: getSchemaPath(User) },
+              assignments: {
+                type: 'array',
+                items: { $ref: getSchemaPath(UserAssignment) },
+              },
+            },
+          },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 25 },
+            totalItems: { type: 'integer', example: 100 },
+            totalPages: { type: 'integer', example: 4 },
+            hasNextPage: { type: 'boolean', example: true },
+            hasPreviousPage: { type: 'boolean', example: false },
+          },
+        },
+      },
+    },
+  })
+  async listStudents(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<ScopedStudentWithAssignments>> {
+    return this.accessControlService.listStudentsForUser(user.id, query);
   }
 
   @Get('assignments/:userId')
