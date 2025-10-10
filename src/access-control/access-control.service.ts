@@ -194,6 +194,22 @@ export class AccessControlService {
     return assignment;
   }
 
+  async listOrganizationsForUser(
+    userId: string,
+  ): Promise<OrganizationDocument[]> {
+    const scope = await this.getAccessScope(userId);
+
+    if (!scope.organizationIds.size) {
+      return [];
+    }
+
+    const organizationIds = this.toObjectIdArray(scope.organizationIds);
+    return this.organizationModel
+      .find({ _id: { $in: organizationIds } })
+      .sort({ title: 1 })
+      .exec();
+  }
+
   async listProjectsForUser(userId: string): Promise<ProjectDocument[]> {
     const scope = await this.getAccessScope(userId);
     if (!scope.projectIds.size) {

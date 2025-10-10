@@ -22,6 +22,7 @@ import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.in
 import { CreateSubcategoryDto } from '../subcategories/dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from '../subcategories/dto/update-subcategory.dto';
 import { Category } from '../categories/schemas/category.schema';
+import { Organization } from '../organizations/schemas/organization.schema';
 import { Project } from '../projects/schemas/project.schema';
 import { Subcategory } from '../subcategories/schemas/subcategory.schema';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
@@ -70,6 +71,15 @@ export class AccessControlController {
   @ApiOkResponse({ type: UserAssignment })
   async removeAssignment(@Param('assignmentId') assignmentId: string) {
     return this.accessControlService.removeAssignment(assignmentId);
+  }
+
+  @Get('organizations')
+  @ApiOperation({
+    summary: 'List organizations accessible to the current user.',
+  })
+  @ApiOkResponse({ type: Organization, isArray: true })
+  async listOrganizations(@CurrentUser() user: AuthenticatedUser) {
+    return this.accessControlService.listOrganizationsForUser(user.id);
   }
 
   @Get('projects')
