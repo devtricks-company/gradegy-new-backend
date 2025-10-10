@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PopulateOptions, Types } from 'mongoose';
+import { hash } from 'bcryptjs';
 import {
   Category,
   CategoryDocument,
@@ -21,6 +23,7 @@ import {
 import { User, UserDocument, UserRole } from '../users/schemas/user.schema';
 import { AccessScope } from './interfaces/access-scope.interface';
 import { CreateUserAssignmentDto } from './dto/create-user-assignment.dto';
+import { RegisterStudentWithAccessDto } from './dto/register-student-with-access.dto';
 import {
   UserAssignment,
   UserAssignmentDocument,
@@ -53,6 +56,8 @@ const USER_ASSIGNMENT_POPULATE: PopulateOptions[] = [
   { path: 'category', select: 'title is_active project' },
   { path: 'subcategory', select: 'title is_active category' },
 ];
+
+const BCRYPT_SALT_ROUNDS = 12;
 
 interface MutableAccessScope {
   organizationIds: Set<string>;
@@ -155,6 +160,78 @@ export class AccessControlService {
       }
       throw error;
     }
+  }
+
+  async registerStudentWithAccess(
+    dto: RegisterStudentWithAccessDto,
+  ): Promise<{
+    user: Record<string, unknown>;
+    assignments: UserAssignmentDocument[];
+  }> {
+    const normalizedEmail = dto.student.email.toLowerCase();
+    const existingUser = await this.userModel
+      .findOne({ email: normalizedEmail })
+      .exec();
+
+    if (existingUser) {
+      throw new ConflictException(
+        `User with email "${normalizedEmail}" already exists.`,
+      );
+    }
+
+    const hashedPassword = await hash(
+      dto.student.password,
+      BCRYPT_SALT_ROUNDS,
+    );
+
+    const userDocument = await new this.userModel({
+      firstName: dto.student.firstName,
+      lastName: dto.student.lastName,
+      email: normalizedEmail,
+      password: hashedPassword,
+      phone: dto.student.phone,
+      avatarUrl: dto.student.avatarUrl,
+      role: UserRole.Student,
+      isActive: dto.student.isActive ?? true,
+    }).save();
+
+    const createdAssignments: UserAssignmentDocument[] = [];
+
+    try {
+      for (const assignment of dto.assignments) {
+        const createdAssignment = await this.createAssignment({
+          user: userDocument.id,
+          organization: assignment.organization,
+          project: assignment.project,
+          category: assignment.category,
+          subcategory: assignment.subcategory,
+        });
+        createdAssignments.push(createdAssignment);
+      }
+    } catch (error) {
+      await Promise.all([
+        this.assignmentModel
+          .deleteMany({ user: userDocument._id })
+          .exec()
+          .catch(() => undefined),
+        this.userModel
+          .findByIdAndDelete(userDocument._id)
+          .exec()
+          .catch(() => undefined),
+      ]);
+      throw error;
+    }
+
+    const populatedAssignments = await Promise.all(
+      createdAssignments.map((assignment) =>
+        assignment.populate(USER_ASSIGNMENT_POPULATE),
+      ),
+    );
+
+    return {
+      user: this.sanitizeUserDocument(userDocument),
+      assignments: populatedAssignments,
+    };
   }
 
   async listAssignmentsForUser(
@@ -761,5 +838,12 @@ export class AccessControlService {
     }
 
     return new Types.ObjectId(id).toHexString();
+  }
+
+  private sanitizeUserDocument(user: UserDocument): Record<string, unknown> {
+    const userObject = user.toObject({ versionKey: false });
+    delete (userObject as { password?: string }).password;
+    userObject._id = user._id;
+    return userObject;
   }
 }
