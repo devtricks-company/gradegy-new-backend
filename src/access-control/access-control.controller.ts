@@ -59,6 +59,19 @@ export class AccessControlController {
     return this.accessControlService.listAssignmentsForUser(userId);
   }
 
+  @Delete('assignments/:assignmentId')
+  @Roles(UserRole.Ultra, UserRole.Super, UserRole.Admin)
+  @ApiOperation({ summary: 'Remove an assignment from a user.' })
+  @ApiParam({
+    name: 'assignmentId',
+    description: 'Assignment identifier.',
+    type: String,
+  })
+  @ApiOkResponse({ type: UserAssignment })
+  async removeAssignment(@Param('assignmentId') assignmentId: string) {
+    return this.accessControlService.removeAssignment(assignmentId);
+  }
+
   @Get('projects')
   @ApiOperation({ summary: 'List projects the current user can access.' })
   @ApiOkResponse({ type: Project, isArray: true })

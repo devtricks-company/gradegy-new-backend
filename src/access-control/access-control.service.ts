@@ -170,6 +170,30 @@ export class AccessControlService {
       .exec();
   }
 
+  async removeAssignment(
+    assignmentId: string,
+  ): Promise<UserAssignmentDocument> {
+    const normalizedId = this.normalizeId(assignmentId, 'assignment');
+
+    const assignment = await this.assignmentModel
+      .findByIdAndDelete(this.toObjectId(normalizedId, 'assignment'))
+      .populate(USER_ASSIGNMENT_POPULATE)
+      .exec();
+
+    if (!assignment) {
+      throw new BadRequestException(
+        `Assignment with id "${assignmentId}" not found.`,
+      );
+    }
+
+    const userId = this.extractId(assignment.user);
+    if (userId) {
+      this.invalidateScopeForUser(userId);
+    }
+
+    return assignment;
+  }
+
   async listProjectsForUser(userId: string): Promise<ProjectDocument[]> {
     const scope = await this.getAccessScope(userId);
     if (!scope.projectIds.size) {
