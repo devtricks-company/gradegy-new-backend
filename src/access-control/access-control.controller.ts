@@ -82,6 +82,43 @@ export class AccessControlController {
   @ApiOperation({
     summary: 'List students accessible to the current user within their scope.',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Free text search applied to first name, last name, email, or phone.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    description:
+      'JSON object describing field filters (firstName, lastName, email, phone, isActive, createdAt, updatedAt).',
+    schema: {
+      type: 'string',
+      example:
+        '{"firstName":{"eq":"Dana"},"isActive":{"eq":true},"createdAt":{"gte":"2024-01-01"}}',
+    },
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description:
+      'Comma separated list of sort fields, prefix with "-" for descending. Allowed: firstName, lastName, email, phone, createdAt, updatedAt.',
+    schema: { type: 'string', example: 'lastName,-createdAt' },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: '1-based page index for pagination.',
+    schema: { type: 'integer', minimum: 1, example: 1 },
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Maximum number of students per page (max 100).',
+    schema: { type: 'integer', minimum: 1, maximum: 100, example: 25 },
+  })
   @ApiOkResponse({
     schema: {
       type: 'object',
