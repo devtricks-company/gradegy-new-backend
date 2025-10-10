@@ -128,7 +128,60 @@ export class AccessControlController {
           items: {
             type: 'object',
             properties: {
-              user: { $ref: getSchemaPath(User) },
+              user: {
+                type: 'object',
+                properties: {
+                  _id: {
+                    type: 'string',
+                    description: 'Unique identifier of the student.',
+                  },
+                  firstName: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Given name of the student.',
+                  },
+                  lastName: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Family name of the student.',
+                  },
+                  email: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Email address used for login.',
+                  },
+                  phone: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Contact phone number.',
+                  },
+                  avatarUrl: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Avatar image URL.',
+                  },
+                  role: {
+                    type: 'string',
+                    description: 'User role (always "student" in this response).',
+                    example: 'student',
+                  },
+                  isActive: {
+                    type: 'boolean',
+                    description: 'Whether the student account is active.',
+                  },
+                  createdAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Date when the account was created.',
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Date when the account was last updated.',
+                  },
+                },
+                additionalProperties: true,
+              },
               assignments: {
                 type: 'array',
                 items: { $ref: getSchemaPath(UserAssignment) },
