@@ -10,11 +10,13 @@ import {
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -26,12 +28,14 @@ import { Organization } from '../organizations/schemas/organization.schema';
 import { Project } from '../projects/schemas/project.schema';
 import { Subcategory } from '../subcategories/schemas/subcategory.schema';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
-import { UserRole } from '../users/schemas/user.schema';
+import { User, UserRole } from '../users/schemas/user.schema';
 import { CreateUserAssignmentDto } from './dto/create-user-assignment.dto';
+import { RegisterStudentWithAccessDto } from './dto/register-student-with-access.dto';
 import { UserAssignment } from './schemas/user-assignment.schema';
 import { AccessControlService } from './access-control.service';
 
 @ApiTags('access-control')
+@ApiExtraModels(UserAssignment, User)
 @Controller('access')
 export class AccessControlController {
   constructor(
@@ -45,6 +49,30 @@ export class AccessControlController {
   @ApiCreatedResponse({ type: UserAssignment })
   async createAssignment(@Body() createDto: CreateUserAssignmentDto) {
     return this.accessControlService.createAssignment(createDto);
+  }
+
+  @Post('students')
+  @Roles(UserRole.Ultra, UserRole.Super, UserRole.Admin)
+  @ApiOperation({
+    summary: 'Register a student and assign scoped access in a single request.',
+  })
+  @ApiCreatedResponse({
+    description: 'Student account created with the requested assignments.',
+    schema: {
+      type: 'object',
+      properties: {
+        user: { $ref: getSchemaPath(User) },
+        assignments: {
+          type: 'array',
+          items: { $ref: getSchemaPath(UserAssignment) },
+        },
+      },
+    },
+  })
+  async registerStudentWithAccess(
+    @Body() registerDto: RegisterStudentWithAccessDto,
+  ) {
+    return this.accessControlService.registerStudentWithAccess(registerDto);
   }
 
   @Get('assignments/:userId')
