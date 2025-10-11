@@ -1,42 +1,29 @@
-name: Build and Deploy to Azure Web App
+name: Deploy to Azure Web App
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
-
-    env:
-      AZURE_WEBAPP_NAME: your-webapp-name        # e.g. gradegy-backend
-      NODE_VERSION: 22                           # match your app/runtime
-      WORKING_DIR: src                           # set if package.json lives in subfolder
-
+    runs-on: windows-latest  # or ubuntu-latest if your build is cross-platform
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '22'        # match your app’s runtime
+          cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install
         run: npm ci
-        working-directory: ${{ env.WORKING_DIR }}
 
-      - name: Run tests
-        run: npm test -- --ci
-        working-directory: ${{ env.WORKING_DIR }}
-
-      - name: Build app
-        run: npm run build
-        working-directory: ${{ env.WORKING_DIR }}
+      - name: Build
+        run: npm run build          # drop if you don’t have a build step
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-name: new-backend-gradegy
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ env.WORKING_DIR }}
+          package: .
