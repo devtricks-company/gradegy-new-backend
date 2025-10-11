@@ -52,4 +52,4 @@ jobs:
           app-name: 'new-backend-gradegy'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_AFA42AD33AED47B2BA5715D50A75145B }}
