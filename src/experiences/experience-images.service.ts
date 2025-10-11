@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PopulateOptions, Types } from 'mongoose';
+import {
+  ExecuteQueryResult,
+  MongooseQueryConfig,
+  executeMongooseQuery,
+} from '../common/utils/mongoose-query.util';
 import { CreateExperienceImageDto } from './dto/create-experience-image.dto';
 import { UpdateExperienceImageDto } from './dto/update-experience-image.dto';
 import {
@@ -12,6 +17,34 @@ const EXPERIENCE_IMAGE_POPULATE: PopulateOptions = {
   path: 'experienceType',
   select: 'title color icon',
 };
+
+const EXPERIENCE_IMAGE_QUERY_CONFIG: MongooseQueryConfig<ExperienceImageDocument> =
+  {
+    searchableFields: ['url', 'title', 'tags'],
+    filterableFields: {
+      url: { type: 'string', operators: ['eq', 'in'] },
+      title: { type: 'string', operators: ['eq', 'in'] },
+      tags: { type: 'string', operators: ['eq', 'in'] },
+      default: { type: 'boolean', operators: ['eq'] },
+      experienceType: { type: 'objectId', operators: ['eq', 'in'] },
+      createdAt: { type: 'date', operators: ['gte', 'lte'] },
+      updatedAt: { type: 'date', operators: ['gte', 'lte'] },
+    },
+    allowedSortFields: [
+      'url',
+      'title',
+      'default',
+      'experienceType',
+      'createdAt',
+      'updatedAt',
+    ],
+    defaultSort: { createdAt: -1 },
+    defaultPopulate: EXPERIENCE_IMAGE_POPULATE,
+    allowedPopulatePaths: ['experienceType'],
+    defaultLimit: 25,
+    maxLimit: 100,
+    lean: false,
+  };
 
 @Injectable()
 export class ExperienceImagesService {
@@ -37,12 +70,14 @@ export class ExperienceImagesService {
     return experienceImage;
   }
 
-  async findAll(): Promise<ExperienceImageDocument[]> {
-    return this.experienceImageModel
-      .find()
-      .sort({ createdAt: -1 })
-      .populate(EXPERIENCE_IMAGE_POPULATE)
-      .exec();
+  async findAll(
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<ExperienceImageDocument>> {
+    return executeMongooseQuery<ExperienceImageDocument>({
+      model: this.experienceImageModel,
+      rawQuery,
+      config: EXPERIENCE_IMAGE_QUERY_CONFIG,
+    });
   }
 
   async findOne(id: string): Promise<ExperienceImageDocument> {
