@@ -83,6 +83,34 @@ export class AccessControlController {
     summary: 'List students accessible to the current user within their scope.',
   })
   @ApiQuery({
+    name: 'organizationId',
+    required: false,
+    description:
+      'Optional organization id to restrict results to assignments within the organization.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'projectId',
+    required: false,
+    description:
+      'Optional project id to restrict results to assignments within the project.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    description:
+      'Optional category id to restrict results to assignments within the category.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'subcategoryId',
+    required: false,
+    description:
+      'Optional subcategory id to restrict results to assignments within the subcategory.',
+    type: String,
+  })
+  @ApiQuery({
     name: 'search',
     required: false,
     description:
@@ -207,7 +235,26 @@ export class AccessControlController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: Record<string, unknown> = {},
   ): Promise<ExecuteQueryResult<ScopedStudentWithAssignments>> {
-    return this.accessControlService.listStudentsForUser(user.id, query);
+    const {
+      organizationId,
+      projectId,
+      categoryId,
+      subcategoryId,
+      ...rawQuery
+    } = query as Record<string, unknown>;
+
+    return this.accessControlService.listStudentsForUser(
+      user.id,
+      rawQuery,
+      {
+        organizationId:
+          typeof organizationId === 'string' ? organizationId : undefined,
+        projectId: typeof projectId === 'string' ? projectId : undefined,
+        categoryId: typeof categoryId === 'string' ? categoryId : undefined,
+        subcategoryId:
+          typeof subcategoryId === 'string' ? subcategoryId : undefined,
+      },
+    );
   }
 
   @Get('assignments/:userId')

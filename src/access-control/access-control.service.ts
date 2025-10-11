@@ -98,6 +98,13 @@ interface MutableAccessScope {
   subcategoryIds: Set<string>;
 }
 
+interface AssignmentFilters {
+  organizationId?: string;
+  projectId?: string;
+  categoryId?: string;
+  subcategoryId?: string;
+}
+
 @Injectable()
 export class AccessControlService {
   private readonly scopeCache = new Map<string, Promise<AccessScope>>();
@@ -305,13 +312,14 @@ export class AccessControlService {
   async listStudentsForUser(
     userId: string,
     rawQuery: Record<string, unknown> = {},
+    assignmentFilters: AssignmentFilters = {},
   ): Promise<ExecuteQueryResult<ScopedStudentWithAssignments>> {
     const scope = await this.getAccessScope(userId);
 
-    const filters: Record<string, unknown>[] = [];
+    const scopeFilters: Record<string, unknown>[] = [];
 
     if (scope.orgWideOrganizationIds.size) {
-      filters.push({
+      scopeFilters.push({
         organization: {
           $in: this.toObjectIdArray(scope.orgWideOrganizationIds),
         },
@@ -319,29 +327,47 @@ export class AccessControlService {
     }
 
     if (scope.projectIds.size) {
-      filters.push({
+      scopeFilters.push({
         project: { $in: this.toObjectIdArray(scope.projectIds) },
       });
     }
 
     if (scope.categoryIds.size) {
-      filters.push({
+      scopeFilters.push({
         category: { $in: this.toObjectIdArray(scope.categoryIds) },
       });
     }
 
     if (scope.subcategoryIds.size) {
-      filters.push({
+      scopeFilters.push({
         subcategory: { $in: this.toObjectIdArray(scope.subcategoryIds) },
       });
     }
 
     const studentIdSet = new Set<string>();
 
-    if (filters.length) {
-      const distinctUserIds = await this.assignmentModel.distinct('user', {
-        $or: filters,
-      });
+    const scopeQuery =
+      scopeFilters.length === 0
+        ? undefined
+        : scopeFilters.length === 1
+          ? (scopeFilters[0] as FilterQuery<UserAssignmentDocument>)
+          : ({ $or: scopeFilters } as FilterQuery<UserAssignmentDocument>);
+
+    const additionalAssignmentFilter =
+      this.buildAssignmentFilterCriteria(assignmentFilters);
+
+    const assignmentQuery: FilterQuery<UserAssignmentDocument> | undefined =
+      scopeQuery && additionalAssignmentFilter
+        ? ({
+            $and: [scopeQuery, additionalAssignmentFilter],
+          } as FilterQuery<UserAssignmentDocument>)
+        : scopeQuery ?? undefined;
+
+    if (assignmentQuery) {
+      const distinctUserIds = await this.assignmentModel.distinct(
+        'user',
+        assignmentQuery,
+      );
 
       for (const id of distinctUserIds) {
         const normalizedId = this.extractId(id as Types.ObjectId | string);
@@ -356,9 +382,15 @@ export class AccessControlService {
       _id: { $in: this.toObjectIdArray(studentIdSet) },
     };
 
+    const sanitizedRawQuery: Record<string, unknown> = { ...rawQuery };
+    delete sanitizedRawQuery['organizationId'];
+    delete sanitizedRawQuery['projectId'];
+    delete sanitizedRawQuery['categoryId'];
+    delete sanitizedRawQuery['subcategoryId'];
+
     const queryResult = await executeMongooseQuery<UserDocument>({
       model: this.userModel,
-      rawQuery,
+      rawQuery: sanitizedRawQuery,
       baseFilter,
       config: STUDENT_QUERY_CONFIG,
     });
@@ -376,7 +408,7 @@ export class AccessControlService {
         ? await this.assignmentModel
             .find({
               user: { $in: this.toObjectIdArray(studentIds) },
-              ...(filters.length ? { $or: filters } : {}),
+              ...(assignmentQuery ?? {}),
             })
             .populate(USER_ASSIGNMENT_POPULATE)
             .exec()
@@ -951,6 +983,39 @@ export class AccessControlService {
         `You do not have ${action} access to subcategory "${subcategoryId}".`,
       );
     }
+  }
+
+  private buildAssignmentFilterCriteria(
+    filters: AssignmentFilters,
+  ): FilterQuery<UserAssignmentDocument> | undefined {
+    const criteria: Record<string, unknown> = {};
+
+    const addFilter = (
+      value: string | undefined,
+      field: 'organization' | 'project' | 'category' | 'subcategory',
+      label: string,
+    ) => {
+      if (typeof value !== 'string') {
+        return;
+      }
+
+      const trimmed = value.trim();
+
+      if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+        return;
+      }
+
+      criteria[field] = this.toObjectId(trimmed, label);
+    };
+
+    addFilter(filters.organizationId, 'organization', 'organizationId');
+    addFilter(filters.projectId, 'project', 'projectId');
+    addFilter(filters.categoryId, 'category', 'categoryId');
+    addFilter(filters.subcategoryId, 'subcategory', 'subcategoryId');
+
+    return Object.keys(criteria).length > 0
+      ? (criteria as FilterQuery<UserAssignmentDocument>)
+      : undefined;
   }
 
   private toObjectIdArray(values: Iterable<string>): Types.ObjectId[] {
