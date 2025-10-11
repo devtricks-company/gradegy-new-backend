@@ -21,7 +21,10 @@ const DEFAULT_EXPERIENCE_POPULATE: PopulateOptions[] = [
   { path: 'project', select: 'title status is_active' },
   { path: 'category', select: 'title is_active' },
   { path: 'subcategory', select: 'title is_active' },
-  { path: 'prerequisite', select: 'title sequence timing_type completion_required' },
+  {
+    path: 'prerequisite',
+    select: 'title sequence timing_type completion_required',
+  },
 ];
 
 const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
@@ -328,10 +331,7 @@ export class ExperiencesService {
     }
   }
 
-  private calculateInclusiveEndDate(
-    startDate: Date,
-    lengthDays: number,
-  ): Date {
+  private calculateInclusiveEndDate(startDate: Date, lengthDays: number): Date {
     const result = new Date(startDate.getTime());
     const offset = Math.max(0, lengthDays - 1);
     result.setUTCDate(result.getUTCDate() + offset);

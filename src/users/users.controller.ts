@@ -93,7 +93,8 @@ export class UsersController {
     name: 'offset',
     required: false,
     type: Number,
-    description: 'Number of records to skip before fetching results. Alias: skip.',
+    description:
+      'Number of records to skip before fetching results. Alias: skip.',
     example: 0,
   })
   @ApiQuery({

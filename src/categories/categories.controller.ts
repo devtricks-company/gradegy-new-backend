@@ -116,14 +116,16 @@ export class CategoriesController {
     name: 'offset',
     required: false,
     type: Number,
-    description: 'Number of records to skip before fetching results. Alias: skip.',
+    description:
+      'Number of records to skip before fetching results. Alias: skip.',
     example: 0,
   })
   @ApiQuery({
     name: 'search',
     required: false,
     type: String,
-    description: 'Free-text search applied to category title and school_level. Alias: q.',
+    description:
+      'Free-text search applied to category title and school_level. Alias: q.',
     example: 'STEM',
   })
   @ApiQuery({

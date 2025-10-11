@@ -126,7 +126,8 @@ export class Experience {
   @ApiProperty({
     enum: ExperienceTimingType,
     enumName: 'ExperienceTimingType',
-    description: 'Determines how the experience availability window is calculated.',
+    description:
+      'Determines how the experience availability window is calculated.',
     default: ExperienceTimingType.DateRange,
   })
   @Prop({
@@ -378,7 +379,10 @@ ExperienceSchema.pre('validate', function (next) {
     }
 
     if (doc.start_date && typeof doc.length_days === 'number') {
-      const derivedEndDate = calculateInclusiveEndDate(doc.start_date, doc.length_days);
+      const derivedEndDate = calculateInclusiveEndDate(
+        doc.start_date,
+        doc.length_days,
+      );
       doc.end_date = derivedEndDate;
       if (!doc.end_time && doc.start_time) {
         doc.end_time = doc.start_time;

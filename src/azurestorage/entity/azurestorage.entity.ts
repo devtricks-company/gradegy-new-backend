@@ -1,1 +1,1 @@
-export class AzureStorage{}
+export class AzureStorage {}

@@ -119,7 +119,8 @@ export class ProjectsController {
     name: 'offset',
     required: false,
     type: Number,
-    description: 'Number of records to skip before fetching results. Alias: skip.',
+    description:
+      'Number of records to skip before fetching results. Alias: skip.',
     example: 0,
   })
   @ApiQuery({
@@ -193,10 +194,7 @@ export class ProjectsController {
               ],
             },
             university: {
-              oneOf: [
-                { $ref: getSchemaPath(University) },
-                { type: 'null' },
-              ],
+              oneOf: [{ $ref: getSchemaPath(University) }, { type: 'null' }],
             },
           },
         },

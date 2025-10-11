@@ -88,7 +88,8 @@ export class OrganizationsController {
     name: 'offset',
     required: false,
     type: Number,
-    description: 'Number of records to skip before fetching results. Alias: skip.',
+    description:
+      'Number of records to skip before fetching results. Alias: skip.',
     example: 0,
   })
   @ApiQuery({
@@ -102,7 +103,8 @@ export class OrganizationsController {
     name: 'sort',
     required: false,
     type: String,
-    description: 'Comma separated sort definition. Prefix with - for descending. Allowed fields: title, short_title, organization_type, lead_contact, createdAt, updatedAt.',
+    description:
+      'Comma separated sort definition. Prefix with - for descending. Allowed fields: title, short_title, organization_type, lead_contact, createdAt, updatedAt.',
     example: 'title,-createdAt',
   })
   @ApiQuery({
@@ -110,21 +112,23 @@ export class OrganizationsController {
     required: false,
     style: 'deepObject',
     explode: true,
-    description: 'Filter definitions using deep object syntax, e.g. filters[organization_type]=secondary & filters[createdAt][gte]=2024-01-01. Supported fields: title, short_title, organization_type, lead_contact, ufcs_member, paid, reward_system, survey_system, school_district, university, is_active, createdAt, updatedAt. Operators vary per field: eq, in, nin, gt, gte, lt, lte.',
+    description:
+      'Filter definitions using deep object syntax, e.g. filters[organization_type]=secondary & filters[createdAt][gte]=2024-01-01. Supported fields: title, short_title, organization_type, lead_contact, ufcs_member, paid, reward_system, survey_system, school_district, university, is_active, createdAt, updatedAt. Operators vary per field: eq, in, nin, gt, gte, lt, lte.',
     schema: {
       type: 'object',
       additionalProperties: true,
     },
     example: {
       organization_type: 'secondary',
-      createdAt: { 'gte': '2024-01-01' },
+      createdAt: { gte: '2024-01-01' },
     },
   })
   @ApiQuery({
     name: 'filter',
     required: false,
     type: String,
-    description: 'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
+    description:
+      'JSON encoded filter definition. Same shape as filters but passed as a JSON string.',
     example: '{"organization_type":"secondary"}',
   })
   findAll(@Query() query: Record<string, unknown>) {
@@ -153,10 +157,7 @@ export class OrganizationsController {
               ],
             },
             university: {
-              oneOf: [
-                { $ref: getSchemaPath(University) },
-                { type: 'null' },
-              ],
+              oneOf: [{ $ref: getSchemaPath(University) }, { type: 'null' }],
             },
           },
         },

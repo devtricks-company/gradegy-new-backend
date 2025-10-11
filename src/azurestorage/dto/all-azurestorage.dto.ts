@@ -1,6 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
-export class UploadResultDto{
+export class UploadResultDto {
   @ApiProperty({
     description: 'The URL of the uploaded file',
     example:
@@ -8,44 +8,41 @@ export class UploadResultDto{
   })
   url: string;
 
-
-   @ApiProperty({
+  @ApiProperty({
     description: 'The blob name in Azure Storage',
     example: 'images/my-image-123.jpg',
   })
   blobName: string;
 
-
-    @ApiProperty({
+  @ApiProperty({
     description: 'The original filename',
     example: 'my-image.jpg',
   })
   fileName: string;
 
-   @ApiProperty({
+  @ApiProperty({
     description: 'The file size in bytes',
     example: 1024576,
   })
   size: number;
 
-    @ApiProperty({
+  @ApiProperty({
     description: 'The MIME type of the file',
     example: 'image/jpeg',
   })
   mimeType: string;
 }
 
-
-export class DeleteResponseDto{
-     @ApiProperty({
+export class DeleteResponseDto {
+  @ApiProperty({
     description: 'Success message',
     example: 'File deleted successfully',
   })
   message: string;
 }
 
-export class UrlResponseDto{
-    @ApiProperty({
+export class UrlResponseDto {
+  @ApiProperty({
     description: 'The URL of the requested file',
     example:
       'https://mystorageaccount.blob.core.windows.net/images/my-image-123.jpg',
@@ -90,7 +87,6 @@ export class FileUploadDto {
   })
   file: any;
 }
-
 
 export class MultipleFileUploadDto {
   @ApiProperty({

@@ -100,7 +100,8 @@ export class CreateExperienceDto {
   @ApiProperty({
     enum: ExperienceTimingType,
     enumName: 'ExperienceTimingType',
-    description: 'Determines how the experience availability window is calculated.',
+    description:
+      'Determines how the experience availability window is calculated.',
     default: ExperienceTimingType.DateRange,
   })
   @IsEnum(ExperienceTimingType)
@@ -121,7 +122,8 @@ export class CreateExperienceDto {
   delay_days?: number;
 
   @ApiPropertyOptional({
-    description: 'Defines ordering of experiences. Lower numbers appear earlier.',
+    description:
+      'Defines ordering of experiences. Lower numbers appear earlier.',
     default: 0,
   })
   @IsOptional()

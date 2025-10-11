@@ -190,7 +190,8 @@ export class AccessControlController {
                   },
                   role: {
                     type: 'string',
-                    description: 'User role (always "student" in this response).',
+                    description:
+                      'User role (always "student" in this response).',
                     example: 'student',
                   },
                   isActive: {
@@ -241,20 +242,16 @@ export class AccessControlController {
       categoryId,
       subcategoryId,
       ...rawQuery
-    } = query as Record<string, unknown>;
+    } = query;
 
-    return this.accessControlService.listStudentsForUser(
-      user.id,
-      rawQuery,
-      {
-        organizationId:
-          typeof organizationId === 'string' ? organizationId : undefined,
-        projectId: typeof projectId === 'string' ? projectId : undefined,
-        categoryId: typeof categoryId === 'string' ? categoryId : undefined,
-        subcategoryId:
-          typeof subcategoryId === 'string' ? subcategoryId : undefined,
-      },
-    );
+    return this.accessControlService.listStudentsForUser(user.id, rawQuery, {
+      organizationId:
+        typeof organizationId === 'string' ? organizationId : undefined,
+      projectId: typeof projectId === 'string' ? projectId : undefined,
+      categoryId: typeof categoryId === 'string' ? categoryId : undefined,
+      subcategoryId:
+        typeof subcategoryId === 'string' ? subcategoryId : undefined,
+    });
   }
 
   @Get('assignments/:userId')

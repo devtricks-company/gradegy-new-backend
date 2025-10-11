@@ -187,4 +187,3 @@ export class SchoolDistrictsController {
     return this.schoolDistrictsService.remove(id);
   }
 }
-

@@ -52,7 +52,8 @@ export function buildExperienceTimeline(
   options: BuildExperienceTimelineOptions,
 ): ExperienceTimelineEntry[] {
   const progressMap =
-    options.progressByExperienceId ?? new Map<string, ExperienceTimelineProgressSnapshot>();
+    options.progressByExperienceId ??
+    new Map<string, ExperienceTimelineProgressSnapshot>();
   const now = options.now ?? new Date();
   const sorted = [...options.experiences].sort((a, b) => {
     if (a.sequence !== b.sequence) {
@@ -65,7 +66,9 @@ export function buildExperienceTimeline(
   const entryById = new Map<string, ExperienceTimelineEntry>();
 
   for (const experience of sorted) {
-    const previousEntry = entries.length ? entries[entries.length - 1] : undefined;
+    const previousEntry = entries.length
+      ? entries[entries.length - 1]
+      : undefined;
     const completionSnapshot = progressMap.get(experience.id);
     const completedAt = completionSnapshot?.completedAt;
 
