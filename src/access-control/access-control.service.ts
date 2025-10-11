@@ -200,9 +200,7 @@ export class AccessControlService {
     }
   }
 
-  async registerStudentWithAccess(
-    dto: RegisterStudentWithAccessDto,
-  ): Promise<{
+  async registerStudentWithAccess(dto: RegisterStudentWithAccessDto): Promise<{
     user: Record<string, unknown>;
     assignments: UserAssignmentDocument[];
   }> {
@@ -217,10 +215,7 @@ export class AccessControlService {
       );
     }
 
-    const hashedPassword = await hash(
-      dto.student.password,
-      BCRYPT_SALT_ROUNDS,
-    );
+    const hashedPassword = await hash(dto.student.password, BCRYPT_SALT_ROUNDS);
 
     const userDocument = await new this.userModel({
       firstName: dto.student.firstName,
@@ -361,7 +356,7 @@ export class AccessControlService {
         ? ({
             $and: [scopeQuery, additionalAssignmentFilter],
           } as FilterQuery<UserAssignmentDocument>)
-        : scopeQuery ?? undefined;
+        : (scopeQuery ?? undefined);
 
     if (assignmentQuery) {
       const distinctUserIds = await this.assignmentModel.distinct(

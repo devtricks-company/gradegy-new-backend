@@ -22,10 +22,7 @@ import {
 import { ExecuteQueryResult } from '../common/utils/mongoose-query.util';
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from './dto/update-subcategory.dto';
-import {
-  Subcategory,
-  SubcategoryDocument,
-} from './schemas/subcategory.schema';
+import { Subcategory, SubcategoryDocument } from './schemas/subcategory.schema';
 import { SubcategoriesService } from './subcategories.service';
 
 @ApiTags('subcategories')
