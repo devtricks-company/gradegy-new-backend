@@ -21,6 +21,7 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { ExecuteQueryResult } from '../common/utils/mongoose-query.util';
 import { CreateSubcategoryDto } from '../subcategories/dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from '../subcategories/dto/update-subcategory.dto';
 import { Category } from '../categories/schemas/category.schema';
@@ -33,6 +34,7 @@ import { CreateUserAssignmentDto } from './dto/create-user-assignment.dto';
 import { RegisterStudentWithAccessDto } from './dto/register-student-with-access.dto';
 import { UserAssignment } from './schemas/user-assignment.schema';
 import { AccessControlService } from './access-control.service';
+import { ScopedStudentWithAssignments } from './interfaces/scoped-student-with-assignments.interface';
 
 @ApiTags('access-control')
 @ApiExtraModels(UserAssignment, User)
@@ -73,6 +75,186 @@ export class AccessControlController {
     @Body() registerDto: RegisterStudentWithAccessDto,
   ) {
     return this.accessControlService.registerStudentWithAccess(registerDto);
+  }
+
+  @Get('students')
+  @Roles(UserRole.Ultra, UserRole.Super, UserRole.Admin)
+  @ApiOperation({
+    summary: 'List students accessible to the current user within their scope.',
+  })
+  @ApiQuery({
+    name: 'organizationId',
+    required: false,
+    description:
+      'Optional organization id to restrict results to assignments within the organization.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'projectId',
+    required: false,
+    description:
+      'Optional project id to restrict results to assignments within the project.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    description:
+      'Optional category id to restrict results to assignments within the category.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'subcategoryId',
+    required: false,
+    description:
+      'Optional subcategory id to restrict results to assignments within the subcategory.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Free text search applied to first name, last name, email, or phone.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    description:
+      'JSON object describing field filters (firstName, lastName, email, phone, isActive, createdAt, updatedAt).',
+    schema: {
+      type: 'string',
+      example:
+        '{"firstName":{"eq":"Dana"},"isActive":{"eq":true},"createdAt":{"gte":"2024-01-01"}}',
+    },
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description:
+      'Comma separated list of sort fields, prefix with "-" for descending. Allowed: firstName, lastName, email, phone, createdAt, updatedAt.',
+    schema: { type: 'string', example: 'lastName,-createdAt' },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: '1-based page index for pagination.',
+    schema: { type: 'integer', minimum: 1, example: 1 },
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Maximum number of students per page (max 100).',
+    schema: { type: 'integer', minimum: 1, maximum: 100, example: 25 },
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              user: {
+                type: 'object',
+                properties: {
+                  _id: {
+                    type: 'string',
+                    description: 'Unique identifier of the student.',
+                  },
+                  firstName: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Given name of the student.',
+                  },
+                  lastName: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Family name of the student.',
+                  },
+                  email: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Email address used for login.',
+                  },
+                  phone: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Contact phone number.',
+                  },
+                  avatarUrl: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Avatar image URL.',
+                  },
+                  role: {
+                    type: 'string',
+                    description: 'User role (always "student" in this response).',
+                    example: 'student',
+                  },
+                  isActive: {
+                    type: 'boolean',
+                    description: 'Whether the student account is active.',
+                  },
+                  createdAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Date when the account was created.',
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Date when the account was last updated.',
+                  },
+                },
+                additionalProperties: true,
+              },
+              assignments: {
+                type: 'array',
+                items: { $ref: getSchemaPath(UserAssignment) },
+              },
+            },
+          },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 25 },
+            totalItems: { type: 'integer', example: 100 },
+            totalPages: { type: 'integer', example: 4 },
+            hasNextPage: { type: 'boolean', example: true },
+            hasPreviousPage: { type: 'boolean', example: false },
+          },
+        },
+      },
+    },
+  })
+  async listStudents(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<ScopedStudentWithAssignments>> {
+    const {
+      organizationId,
+      projectId,
+      categoryId,
+      subcategoryId,
+      ...rawQuery
+    } = query as Record<string, unknown>;
+
+    return this.accessControlService.listStudentsForUser(
+      user.id,
+      rawQuery,
+      {
+        organizationId:
+          typeof organizationId === 'string' ? organizationId : undefined,
+        projectId: typeof projectId === 'string' ? projectId : undefined,
+        categoryId: typeof categoryId === 'string' ? categoryId : undefined,
+        subcategoryId:
+          typeof subcategoryId === 'string' ? subcategoryId : undefined,
+      },
+    );
   }
 
   @Get('assignments/:userId')

@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, PopulateOptions, Types } from 'mongoose';
+import { FilterQuery, Model, PopulateOptions, Types } from 'mongoose';
 import { hash } from 'bcryptjs';
 import {
   Category,
@@ -21,7 +21,13 @@ import {
   SubcategoryDocument,
 } from '../subcategories/schemas/subcategory.schema';
 import { User, UserDocument, UserRole } from '../users/schemas/user.schema';
+import {
+  ExecuteQueryResult,
+  MongooseQueryConfig,
+  executeMongooseQuery,
+} from '../common/utils/mongoose-query.util';
 import { AccessScope } from './interfaces/access-scope.interface';
+import { ScopedStudentWithAssignments } from './interfaces/scoped-student-with-assignments.interface';
 import { CreateUserAssignmentDto } from './dto/create-user-assignment.dto';
 import { RegisterStudentWithAccessDto } from './dto/register-student-with-access.dto';
 import {
@@ -59,12 +65,44 @@ const USER_ASSIGNMENT_POPULATE: PopulateOptions[] = [
 
 const BCRYPT_SALT_ROUNDS = 12;
 
+const STUDENT_QUERY_CONFIG: MongooseQueryConfig<UserDocument> = {
+  searchableFields: ['firstName', 'lastName', 'email', 'phone'],
+  filterableFields: {
+    firstName: { type: 'string', operators: ['eq', 'in'] },
+    lastName: { type: 'string', operators: ['eq', 'in'] },
+    email: { type: 'string', operators: ['eq', 'in'] },
+    phone: { type: 'string', operators: ['eq', 'in'] },
+    isActive: { type: 'boolean', operators: ['eq'] },
+    createdAt: { type: 'date', operators: ['gte', 'lte'] },
+    updatedAt: { type: 'date', operators: ['gte', 'lte'] },
+  },
+  allowedSortFields: [
+    'firstName',
+    'lastName',
+    'email',
+    'phone',
+    'createdAt',
+    'updatedAt',
+  ],
+  defaultSort: { lastName: 1, firstName: 1, email: 1 },
+  defaultLimit: 25,
+  maxLimit: 100,
+  lean: false,
+};
+
 interface MutableAccessScope {
   organizationIds: Set<string>;
   orgWideOrganizationIds: Set<string>;
   projectIds: Set<string>;
   categoryIds: Set<string>;
   subcategoryIds: Set<string>;
+}
+
+interface AssignmentFilters {
+  organizationId?: string;
+  projectId?: string;
+  categoryId?: string;
+  subcategoryId?: string;
 }
 
 @Injectable()
@@ -269,6 +307,148 @@ export class AccessControlService {
     }
 
     return assignment;
+  }
+
+  async listStudentsForUser(
+    userId: string,
+    rawQuery: Record<string, unknown> = {},
+    assignmentFilters: AssignmentFilters = {},
+  ): Promise<ExecuteQueryResult<ScopedStudentWithAssignments>> {
+    const scope = await this.getAccessScope(userId);
+
+    const scopeFilters: Record<string, unknown>[] = [];
+
+    if (scope.orgWideOrganizationIds.size) {
+      scopeFilters.push({
+        organization: {
+          $in: this.toObjectIdArray(scope.orgWideOrganizationIds),
+        },
+      });
+    }
+
+    if (scope.projectIds.size) {
+      scopeFilters.push({
+        project: { $in: this.toObjectIdArray(scope.projectIds) },
+      });
+    }
+
+    if (scope.categoryIds.size) {
+      scopeFilters.push({
+        category: { $in: this.toObjectIdArray(scope.categoryIds) },
+      });
+    }
+
+    if (scope.subcategoryIds.size) {
+      scopeFilters.push({
+        subcategory: { $in: this.toObjectIdArray(scope.subcategoryIds) },
+      });
+    }
+
+    const studentIdSet = new Set<string>();
+
+    const scopeQuery =
+      scopeFilters.length === 0
+        ? undefined
+        : scopeFilters.length === 1
+          ? (scopeFilters[0] as FilterQuery<UserAssignmentDocument>)
+          : ({ $or: scopeFilters } as FilterQuery<UserAssignmentDocument>);
+
+    const additionalAssignmentFilter =
+      this.buildAssignmentFilterCriteria(assignmentFilters);
+
+    const assignmentQuery: FilterQuery<UserAssignmentDocument> | undefined =
+      scopeQuery && additionalAssignmentFilter
+        ? ({
+            $and: [scopeQuery, additionalAssignmentFilter],
+          } as FilterQuery<UserAssignmentDocument>)
+        : scopeQuery ?? undefined;
+
+    if (assignmentQuery) {
+      const distinctUserIds = await this.assignmentModel.distinct(
+        'user',
+        assignmentQuery,
+      );
+
+      for (const id of distinctUserIds) {
+        const normalizedId = this.extractId(id as Types.ObjectId | string);
+        if (normalizedId) {
+          studentIdSet.add(normalizedId);
+        }
+      }
+    }
+
+    const baseFilter: FilterQuery<UserDocument> = {
+      role: UserRole.Student,
+      _id: { $in: this.toObjectIdArray(studentIdSet) },
+    };
+
+    const sanitizedRawQuery: Record<string, unknown> = { ...rawQuery };
+    delete sanitizedRawQuery['organizationId'];
+    delete sanitizedRawQuery['projectId'];
+    delete sanitizedRawQuery['categoryId'];
+    delete sanitizedRawQuery['subcategoryId'];
+
+    const queryResult = await executeMongooseQuery<UserDocument>({
+      model: this.userModel,
+      rawQuery: sanitizedRawQuery,
+      baseFilter,
+      config: STUDENT_QUERY_CONFIG,
+    });
+
+    const studentIds = queryResult.data
+      .map((student) =>
+        this.extractId(
+          (student._id as Types.ObjectId | string | undefined) ?? undefined,
+        ),
+      )
+      .filter((id): id is string => Boolean(id));
+
+    const assignments =
+      studentIds.length > 0
+        ? await this.assignmentModel
+            .find({
+              user: { $in: this.toObjectIdArray(studentIds) },
+              ...(assignmentQuery ?? {}),
+            })
+            .populate(USER_ASSIGNMENT_POPULATE)
+            .exec()
+        : [];
+
+    const assignmentsByStudent = new Map<string, Record<string, unknown>[]>();
+
+    for (const assignment of assignments) {
+      const assignmentUserId = this.extractId(assignment.user);
+      if (!assignmentUserId) {
+        continue;
+      }
+
+      const sanitizedAssignment = this.sanitizeAssignmentDocument(assignment);
+      const existing = assignmentsByStudent.get(assignmentUserId);
+
+      if (existing) {
+        existing.push(sanitizedAssignment);
+      } else {
+        assignmentsByStudent.set(assignmentUserId, [sanitizedAssignment]);
+      }
+    }
+
+    const data: ScopedStudentWithAssignments[] = queryResult.data.map(
+      (student) => {
+        const studentId =
+          this.extractId(
+            (student._id as Types.ObjectId | string | undefined) ?? undefined,
+          ) ?? '';
+        return {
+          user: this.sanitizeUserDocument(student),
+          assignments: assignmentsByStudent.get(studentId) ?? [],
+        };
+      },
+    );
+
+    return {
+      data,
+      meta: queryResult.meta,
+    };
   }
 
   async listOrganizationsForUser(
@@ -805,6 +985,39 @@ export class AccessControlService {
     }
   }
 
+  private buildAssignmentFilterCriteria(
+    filters: AssignmentFilters,
+  ): FilterQuery<UserAssignmentDocument> | undefined {
+    const criteria: Record<string, unknown> = {};
+
+    const addFilter = (
+      value: string | undefined,
+      field: 'organization' | 'project' | 'category' | 'subcategory',
+      label: string,
+    ) => {
+      if (typeof value !== 'string') {
+        return;
+      }
+
+      const trimmed = value.trim();
+
+      if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+        return;
+      }
+
+      criteria[field] = this.toObjectId(trimmed, label);
+    };
+
+    addFilter(filters.organizationId, 'organization', 'organizationId');
+    addFilter(filters.projectId, 'project', 'projectId');
+    addFilter(filters.categoryId, 'category', 'categoryId');
+    addFilter(filters.subcategoryId, 'subcategory', 'subcategoryId');
+
+    return Object.keys(criteria).length > 0
+      ? (criteria as FilterQuery<UserAssignmentDocument>)
+      : undefined;
+  }
+
   private toObjectIdArray(values: Iterable<string>): Types.ObjectId[] {
     return Array.from(new Set(values)).map((value) => this.toObjectId(value));
   }
@@ -838,6 +1051,14 @@ export class AccessControlService {
     }
 
     return new Types.ObjectId(id).toHexString();
+  }
+
+  private sanitizeAssignmentDocument(
+    assignment: UserAssignmentDocument,
+  ): Record<string, unknown> {
+    const assignmentObject = assignment.toObject({ versionKey: false });
+    delete (assignmentObject as { user?: unknown }).user;
+    return assignmentObject;
   }
 
   private sanitizeUserDocument(user: UserDocument): Record<string, unknown> {
