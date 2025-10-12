@@ -177,6 +177,14 @@ export class CreateExperienceDto {
   end_with_parent?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Set to true to publish the experience to learners.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  expPublish?: boolean;
+
+  @ApiPropertyOptional({
     description:
       'Calendar date when the experience becomes visible to learners.',
     example: '2025-09-01',

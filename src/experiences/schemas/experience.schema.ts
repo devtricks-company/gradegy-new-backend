@@ -228,6 +228,13 @@ export class Experience {
   end_with_parent!: boolean;
 
   @ApiPropertyOptional({
+    description: 'Indicates whether the experience is published to learners.',
+    default: false,
+  })
+  @Prop({ type: Boolean, default: false })
+  expPublish!: boolean;
+
+  @ApiPropertyOptional({
     description:
       'Calendar date when the experience becomes visible to learners.',
     example: '2025-09-01',
