@@ -22,6 +22,8 @@ import { CreateExperienceDto } from './dto/create-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { Experience } from './schemas/experience.schema';
 import { ExperiencesService } from './experiences.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @ApiTags('experiences')
 @ApiExtraModels(Experience)
@@ -64,8 +66,11 @@ export class ExperiencesController {
       },
     },
   })
-  findAll(@Query() query: Record<string, unknown>) {
-    return this.experiencesService.findAll(query);
+  findAll(
+    @Query() query: Record<string, unknown>,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.experiencesService.findAll(query, user);
   }
 
   @Get(':id')

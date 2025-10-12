@@ -1,5 +1,6 @@
 ﻿import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AccessControlModule } from '../access-control/access-control.module';
 import { ExperienceImagesController } from './experience-images.controller';
 import { ExperienceImagesService } from './experience-images.service';
 import { ExperienceTypesController } from './experience-types.controller';
@@ -23,6 +24,7 @@ import {
       { name: ExperienceType.name, schema: ExperienceTypeSchema },
       { name: ExperienceImage.name, schema: ExperienceImageSchema },
     ]),
+    AccessControlModule,
   ],
   controllers: [
     ExperiencesController,
