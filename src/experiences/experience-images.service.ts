@@ -87,7 +87,9 @@ export class ExperienceImagesService {
       .exec();
 
     if (!experienceImage) {
-      throw new NotFoundException(`Experience image with id "${id}" not found.`);
+      throw new NotFoundException(
+        `Experience image with id "${id}" not found.`,
+      );
     }
 
     return experienceImage;
@@ -97,12 +99,12 @@ export class ExperienceImagesService {
     id: string,
     updateDto: UpdateExperienceImageDto,
   ): Promise<ExperienceImageDocument> {
-    const experienceImage = await this.experienceImageModel
-      .findById(id)
-      .exec();
+    const experienceImage = await this.experienceImageModel.findById(id).exec();
 
     if (!experienceImage) {
-      throw new NotFoundException(`Experience image with id "${id}" not found.`);
+      throw new NotFoundException(
+        `Experience image with id "${id}" not found.`,
+      );
     }
 
     if (updateDto.url !== undefined) {
@@ -139,7 +141,9 @@ export class ExperienceImagesService {
       .exec();
 
     if (!experienceImage) {
-      throw new NotFoundException(`Experience image with id "${id}" not found.`);
+      throw new NotFoundException(
+        `Experience image with id "${id}" not found.`,
+      );
     }
 
     return experienceImage;
