@@ -22,6 +22,17 @@ export enum ExperienceTimingType {
   DateRange = 'date_range',
 }
 
+export enum ExperienceDriverType {
+  SelfEfficacyTAG = 'SelfEfficacyTAG',
+  FutureDevTAG = 'FutureDevTAG',
+  ConnectTAG = 'ConnectTAG',
+  EmoTAG = 'EmoTAG',
+  SocialTAG = 'SocialTAG',
+  FinancialTAG = 'FinancialTAG',
+  AcademicTAG = 'AcademicTAG',
+  SituationalTAG = 'SituationalTAG',
+}
+
 export const EXPERIENCE_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 export const EXPERIENCE_TIME_FORMAT_ERROR =
   'Time must be in 24-hour HH:mm or HH:mm:ss format with leading zeros.';
@@ -122,6 +133,30 @@ export class Experience {
     index: true,
   })
   subcategory?: Types.ObjectId;
+
+  @ApiPropertyOptional({
+    enum: ExperienceDriverType,
+    enumName: 'ExperienceDriverType',
+    description: 'Primary TAG driver associated with the experience.',
+  })
+  @Prop({
+    type: String,
+    enum: ExperienceDriverType,
+    default: undefined,
+  })
+  driver_one?: ExperienceDriverType;
+
+  @ApiPropertyOptional({
+    enum: ExperienceDriverType,
+    enumName: 'ExperienceDriverType',
+    description: 'Secondary TAG driver associated with the experience.',
+  })
+  @Prop({
+    type: String,
+    enum: ExperienceDriverType,
+    default: undefined,
+  })
+  driver_two?: ExperienceDriverType;
 
   @ApiProperty({
     enum: ExperienceTimingType,

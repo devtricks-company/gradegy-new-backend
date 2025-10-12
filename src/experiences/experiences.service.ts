@@ -35,6 +35,8 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
     project: { type: 'objectId', operators: ['eq', 'in'] },
     category: { type: 'objectId', operators: ['eq', 'in'] },
     subcategory: { type: 'objectId', operators: ['eq', 'in'] },
+    driver_one: { type: 'string', operators: ['eq', 'in'] },
+    driver_two: { type: 'string', operators: ['eq', 'in'] },
     timing_type: { type: 'string', operators: ['eq', 'in'] },
     delay_days: { type: 'number', operators: ['eq', 'gte', 'lte'] },
     length_days: { type: 'number', operators: ['eq', 'gte', 'lte'] },
@@ -96,6 +98,8 @@ export class ExperiencesService {
       project: this.toOptionalObjectId(createDto.project),
       category: this.toOptionalObjectId(createDto.category),
       subcategory: this.toOptionalObjectId(createDto.subcategory),
+      driver_one: createDto.driver_one ?? undefined,
+      driver_two: createDto.driver_two ?? undefined,
       timing_type: createDto.timing_type,
       delay_days: createDto.delay_days ?? 0,
       length_days: createDto.length_days,
@@ -189,6 +193,12 @@ export class ExperiencesService {
     }
     if (updateDto.subcategory !== undefined) {
       experience.subcategory = this.toOptionalObjectId(updateDto.subcategory);
+    }
+    if (updateDto.driver_one !== undefined) {
+      experience.driver_one = updateDto.driver_one ?? undefined;
+    }
+    if (updateDto.driver_two !== undefined) {
+      experience.driver_two = updateDto.driver_two ?? undefined;
     }
     if (updateDto.timing_type !== undefined) {
       experience.timing_type = updateDto.timing_type;

@@ -15,6 +15,7 @@ import {
 import {
   EXPERIENCE_TIME_PATTERN,
   ExperienceCompletionType,
+  ExperienceDriverType,
   ExperienceTimingType,
 } from '../schemas/experience.schema';
 
@@ -96,6 +97,24 @@ export class CreateExperienceDto {
   @IsOptional()
   @IsMongoId()
   subcategory?: string;
+
+  @ApiPropertyOptional({
+    enum: ExperienceDriverType,
+    enumName: 'ExperienceDriverType',
+    description: 'Primary TAG driver associated with the experience.',
+  })
+  @IsOptional()
+  @IsEnum(ExperienceDriverType)
+  driver_one?: ExperienceDriverType;
+
+  @ApiPropertyOptional({
+    enum: ExperienceDriverType,
+    enumName: 'ExperienceDriverType',
+    description: 'Secondary TAG driver associated with the experience.',
+  })
+  @IsOptional()
+  @IsEnum(ExperienceDriverType)
+  driver_two?: ExperienceDriverType;
 
   @ApiProperty({
     enum: ExperienceTimingType,
