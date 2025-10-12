@@ -22,7 +22,10 @@ import {
 import { CreateExperienceImageDto } from './dto/create-experience-image.dto';
 import { UpdateExperienceImageDto } from './dto/update-experience-image.dto';
 import { ExperienceImagesService } from './experience-images.service';
-import { ExperienceImage, ExperienceImageDocument } from './schemas/experience-image.schema';
+import {
+  ExperienceImage,
+  ExperienceImageDocument,
+} from './schemas/experience-image.schema';
 import { ExecuteQueryResult } from '../common/utils/mongoose-query.util';
 
 @ApiTags('experience-images')
@@ -94,8 +97,7 @@ export class ExperienceImagesController {
     name: 'search',
     required: false,
     type: String,
-    description:
-      'Full-text search applied to url, title, and tags. Alias: q.',
+    description: 'Full-text search applied to url, title, and tags. Alias: q.',
     example: 'banner',
   })
   @ApiQuery({
@@ -162,10 +164,7 @@ export class ExperienceImagesController {
     description: 'Experience image updated successfully.',
   })
   @ApiNotFoundResponse({ description: 'Experience image not found.' })
-  update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateExperienceImageDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateDto: UpdateExperienceImageDto) {
     return this.experienceImagesService.update(id, updateDto);
   }
 

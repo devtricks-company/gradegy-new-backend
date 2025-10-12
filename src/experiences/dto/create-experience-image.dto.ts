@@ -42,7 +42,8 @@ export class CreateExperienceImageDto {
   tags?: string | null;
 
   @ApiPropertyOptional({
-    description: 'Marks the image as the default choice for the experience type.',
+    description:
+      'Marks the image as the default choice for the experience type.',
     default: false,
   })
   @IsOptional()

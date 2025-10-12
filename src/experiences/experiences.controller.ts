@@ -15,6 +15,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -22,6 +23,8 @@ import { CreateExperienceDto } from './dto/create-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { Experience } from './schemas/experience.schema';
 import { ExperiencesService } from './experiences.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @ApiTags('experiences')
 @ApiExtraModels(Experience)
@@ -41,6 +44,64 @@ export class ExperiencesController {
 
   @Get()
   @ApiOperation({ summary: 'Retrieve a paginated list of experiences' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-based). Alias: currentPage.',
+    schema: { type: 'integer', minimum: 1, example: 1 },
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description:
+      'Maximum items per page. Aliases: pageSize, perPage, take. Maximum allowed: 100.',
+    schema: { type: 'integer', minimum: 1, maximum: 100, example: 25 },
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Offset of the first item to return. Alias: skip.',
+    schema: { type: 'integer', minimum: 0, example: 0 },
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description:
+      'Sort expression. Use comma separated fields (prefix with - for descending). Alias: orderBy. Allowed fields: title, sequence, start_date, end_date, delay_days, xp_completion, xp_view, gems, createdAt, updatedAt.',
+    schema: { type: 'string', example: '-createdAt,sequence' },
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Case-insensitive search term applied to the title, subtitle, and description fields. Alias: q.',
+    schema: { type: 'string', example: 'Onboarding' },
+  })
+  @ApiQuery({
+    name: 'filters',
+    required: false,
+    description:
+      'Deep object filter map. Use filters[field] or filters[field][operator] syntax. Supported fields: experience_type, organization, project, category, subcategory, driver_one, driver_two, timing_type, delay_days, length_days, sequence, prerequisite, completion_required, end_with_parent, expPublish, completion_type, auto_complete, start_date, end_date, createdAt, updatedAt. Operators: eq, ne, gt, gte, lt, lte, in, nin (per field config).',
+    style: 'deepObject',
+    explode: true,
+    schema: {
+      type: 'object',
+      additionalProperties: true,
+      example: {
+        sequence: { gte: 1 },
+        organization: { in: ['64b0a1', '64b0a2'] },
+        completion_required: { eq: true },
+        start_date: { gte: '2024-01-01', lte: '2024-12-31' },
+      },
+    },
+  })
+  @ApiQuery({
+    name: 'populate',
+    required: false,
+    description:
+      'Comma separated relations to populate. Alias: populates. Allowed values: experience_type, organization, project, category, subcategory, prerequisite.',
+    schema: { type: 'string', example: 'project,category' },
+  })
   @ApiOkResponse({
     description: 'Experiences retrieved successfully.',
     schema: {
@@ -64,8 +125,11 @@ export class ExperiencesController {
       },
     },
   })
-  findAll(@Query() query: Record<string, unknown>) {
-    return this.experiencesService.findAll(query);
+  findAll(
+    @Query() query: Record<string, unknown>,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.experiencesService.findAll(query, user);
   }
 
   @Get(':id')

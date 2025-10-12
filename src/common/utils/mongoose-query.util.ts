@@ -4,6 +4,7 @@ import {
   PopulateOptions,
   ProjectionType,
   QueryOptions,
+  Types,
 } from 'mongoose';
 
 export type FilterOperator =
@@ -548,14 +549,26 @@ function convertPrimitive(value: unknown, type: FilterFieldType): unknown {
       return parseDate(value);
     }
     case 'objectId': {
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        return trimmed.length ? trimmed : undefined;
+      if (value instanceof Types.ObjectId) {
+        return value;
       }
-      if (typeof value === 'number') {
-        return String(value);
+
+      const raw =
+        typeof value === 'string'
+          ? value.trim()
+          : typeof value === 'number'
+            ? String(value)
+            : undefined;
+
+      if (!raw || !Types.ObjectId.isValid(raw)) {
+        return undefined;
       }
-      return undefined;
+
+      try {
+        return new Types.ObjectId(raw);
+      } catch {
+        return undefined;
+      }
     }
     case 'string':
     default: {

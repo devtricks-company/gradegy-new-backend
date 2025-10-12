@@ -1,11 +1,15 @@
 ﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, PopulateOptions, Types } from 'mongoose';
+import { Model, PopulateOptions, Types, FilterQuery } from 'mongoose';
 import {
   ExecuteQueryResult,
   MongooseQueryConfig,
   executeMongooseQuery,
 } from '../common/utils/mongoose-query.util';
+import { AccessControlService } from '../access-control/access-control.service';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import type { AccessScope } from '../access-control/interfaces/access-scope.interface';
+import { UserRole } from '../users/schemas/user.schema';
 import { CreateExperienceDto } from './dto/create-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import {
@@ -84,6 +88,7 @@ export class ExperiencesService {
   constructor(
     @InjectModel(Experience.name)
     private readonly experienceModel: Model<ExperienceDocument>,
+    private readonly accessControlService: AccessControlService,
   ) {}
 
   async create(createDto: CreateExperienceDto): Promise<ExperienceDocument> {
@@ -133,11 +138,14 @@ export class ExperiencesService {
 
   async findAll(
     rawQuery: Record<string, unknown> = {},
+    user?: AuthenticatedUser,
   ): Promise<ExecuteQueryResult<ExperienceDocument>> {
+    const baseFilter = await this.resolveAccessFilter(user);
     return executeMongooseQuery<ExperienceDocument>({
       model: this.experienceModel,
       rawQuery,
       config: EXPERIENCE_QUERY_CONFIG,
+      baseFilter,
     });
   }
 
@@ -351,5 +359,79 @@ export class ExperiencesService {
     const offset = Math.max(0, lengthDays - 1);
     result.setUTCDate(result.getUTCDate() + offset);
     return result;
+  }
+
+  private async resolveAccessFilter(
+    user?: AuthenticatedUser,
+  ): Promise<FilterQuery<ExperienceDocument> | undefined> {
+    if (!user) {
+      return undefined;
+    }
+
+    if (user.role === UserRole.Ultra) {
+      return undefined;
+    }
+
+    if (user.role === UserRole.Super) {
+      const scope = await this.accessControlService.getAccessScope(user.id);
+      return this.buildOrganizationFilter(scope.organizationIds);
+    }
+
+    if (user.role === UserRole.Admin) {
+      const scope = await this.accessControlService.getAccessScope(user.id);
+      return this.buildAdminAccessFilter(scope);
+    }
+
+    return undefined;
+  }
+
+  private buildOrganizationFilter(
+    organizationIds: ReadonlySet<string>,
+  ): FilterQuery<ExperienceDocument> {
+    const ids = this.toObjectIdArray(organizationIds);
+    if (!ids.length) {
+      return { _id: { $exists: false } };
+    }
+    return { organization: { $in: ids } };
+  }
+
+  private buildAdminAccessFilter(
+    scope: AccessScope,
+  ): FilterQuery<ExperienceDocument> {
+    const clauses: FilterQuery<ExperienceDocument>[] = [];
+
+    const orgIds = this.toObjectIdArray(scope.orgWideOrganizationIds);
+    if (orgIds.length) {
+      clauses.push({ organization: { $in: orgIds } });
+    }
+
+    const projectIds = this.toObjectIdArray(scope.projectIds);
+    if (projectIds.length) {
+      clauses.push({ project: { $in: projectIds } });
+    }
+
+    const categoryIds = this.toObjectIdArray(scope.categoryIds);
+    if (categoryIds.length) {
+      clauses.push({ category: { $in: categoryIds } });
+    }
+
+    const subcategoryIds = this.toObjectIdArray(scope.subcategoryIds);
+    if (subcategoryIds.length) {
+      clauses.push({ subcategory: { $in: subcategoryIds } });
+    }
+
+    if (!clauses.length) {
+      return { _id: { $exists: false } };
+    }
+
+    return { $or: clauses };
+  }
+
+  private toObjectIdArray(values: Iterable<string>): Types.ObjectId[] {
+    const uniqueValues = Array.from(new Set(values));
+    if (!uniqueValues.length) {
+      return [];
+    }
+    return uniqueValues.map((value) => new Types.ObjectId(value));
   }
 }
