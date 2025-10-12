@@ -35,6 +35,8 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
     project: { type: 'objectId', operators: ['eq', 'in'] },
     category: { type: 'objectId', operators: ['eq', 'in'] },
     subcategory: { type: 'objectId', operators: ['eq', 'in'] },
+    driver_one: { type: 'string', operators: ['eq', 'in'] },
+    driver_two: { type: 'string', operators: ['eq', 'in'] },
     timing_type: { type: 'string', operators: ['eq', 'in'] },
     delay_days: { type: 'number', operators: ['eq', 'gte', 'lte'] },
     length_days: { type: 'number', operators: ['eq', 'gte', 'lte'] },
@@ -42,6 +44,7 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
     prerequisite: { type: 'objectId', operators: ['eq', 'in'] },
     completion_required: { type: 'boolean', operators: ['eq'] },
     end_with_parent: { type: 'boolean', operators: ['eq'] },
+    expPublish: { type: 'boolean', operators: ['eq'] },
     completion_type: { type: 'string', operators: ['eq', 'in'] },
     auto_complete: { type: 'boolean', operators: ['eq'] },
     start_date: { type: 'date', operators: ['gte', 'lte'] },
@@ -96,6 +99,8 @@ export class ExperiencesService {
       project: this.toOptionalObjectId(createDto.project),
       category: this.toOptionalObjectId(createDto.category),
       subcategory: this.toOptionalObjectId(createDto.subcategory),
+      driver_one: createDto.driver_one ?? undefined,
+      driver_two: createDto.driver_two ?? undefined,
       timing_type: createDto.timing_type,
       delay_days: createDto.delay_days ?? 0,
       length_days: createDto.length_days,
@@ -103,6 +108,7 @@ export class ExperiencesService {
       prerequisite: this.toOptionalObjectId(createDto.prerequisite),
       completion_required: createDto.completion_required ?? false,
       end_with_parent: createDto.end_with_parent ?? false,
+      expPublish: createDto.expPublish ?? false,
       start_date: startDate,
       end_date: endDate,
       start_time: this.normalizeOptionalTime(createDto.start_time),
@@ -190,6 +196,12 @@ export class ExperiencesService {
     if (updateDto.subcategory !== undefined) {
       experience.subcategory = this.toOptionalObjectId(updateDto.subcategory);
     }
+    if (updateDto.driver_one !== undefined) {
+      experience.driver_one = updateDto.driver_one ?? undefined;
+    }
+    if (updateDto.driver_two !== undefined) {
+      experience.driver_two = updateDto.driver_two ?? undefined;
+    }
     if (updateDto.timing_type !== undefined) {
       experience.timing_type = updateDto.timing_type;
     }
@@ -210,6 +222,9 @@ export class ExperiencesService {
     }
     if (updateDto.end_with_parent !== undefined) {
       experience.end_with_parent = updateDto.end_with_parent;
+    }
+    if (updateDto.expPublish !== undefined) {
+      experience.expPublish = updateDto.expPublish;
     }
     if (updateDto.start_date !== undefined) {
       experience.start_date = this.toOptionalDate(updateDto.start_date);
