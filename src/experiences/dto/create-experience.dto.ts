@@ -245,8 +245,7 @@ export class CreateExperienceDto {
   })
   @ValidateIf(
     (dto: CreateExperienceDto) =>
-      dto.timing_type === ExperienceTimingType.DateRange ||
-      dto.timing_type === ExperienceTimingType.StartDateAndLength,
+      dto.timing_type === ExperienceTimingType.DateRange 
   )
   @Matches(EXPERIENCE_TIME_PATTERN, {
     message:
