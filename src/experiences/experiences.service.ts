@@ -44,6 +44,7 @@ const EXPERIENCE_QUERY_CONFIG: MongooseQueryConfig<ExperienceDocument> = {
     prerequisite: { type: 'objectId', operators: ['eq', 'in'] },
     completion_required: { type: 'boolean', operators: ['eq'] },
     end_with_parent: { type: 'boolean', operators: ['eq'] },
+    expPublish: { type: 'boolean', operators: ['eq'] },
     completion_type: { type: 'string', operators: ['eq', 'in'] },
     auto_complete: { type: 'boolean', operators: ['eq'] },
     start_date: { type: 'date', operators: ['gte', 'lte'] },
@@ -107,6 +108,7 @@ export class ExperiencesService {
       prerequisite: this.toOptionalObjectId(createDto.prerequisite),
       completion_required: createDto.completion_required ?? false,
       end_with_parent: createDto.end_with_parent ?? false,
+      expPublish: createDto.expPublish ?? false,
       start_date: startDate,
       end_date: endDate,
       start_time: this.normalizeOptionalTime(createDto.start_time),
@@ -220,6 +222,9 @@ export class ExperiencesService {
     }
     if (updateDto.end_with_parent !== undefined) {
       experience.end_with_parent = updateDto.end_with_parent;
+    }
+    if (updateDto.expPublish !== undefined) {
+      experience.expPublish = updateDto.expPublish;
     }
     if (updateDto.start_date !== undefined) {
       experience.start_date = this.toOptionalDate(updateDto.start_date);
