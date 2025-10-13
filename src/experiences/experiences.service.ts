@@ -94,13 +94,19 @@ export class ExperiencesService {
   async create(createDto: CreateExperienceDto): Promise<ExperienceDocument> {
     const startDate = this.toOptionalDate(createDto.start_date);
     const endDate = this.toOptionalDate(createDto.end_date);
+    const organizationId = new Types.ObjectId(createDto.organization);
+    const prerequisiteId = this.toOptionalObjectId(createDto.prerequisite);
+    const nextSequence = await this.calculateNextSequence(
+      organizationId,
+      prerequisiteId,
+    );
     const payload: Partial<Experience> = {
       title: this.normalizeRequiredString(createDto.title),
       subtitle: this.normalizeOptionalString(createDto.subtitle) ?? '',
       description: this.normalizeRequiredString(createDto.description),
       image: this.normalizeOptionalString(createDto.image) ?? '',
       experience_type: new Types.ObjectId(createDto.experience_type),
-      organization: new Types.ObjectId(createDto.organization),
+      organization: organizationId,
       project: this.toOptionalObjectId(createDto.project),
       category: this.toOptionalObjectId(createDto.category),
       subcategory: this.toOptionalObjectId(createDto.subcategory),
@@ -109,8 +115,8 @@ export class ExperiencesService {
       timing_type: createDto.timing_type,
       delay_days: createDto.delay_days ?? 0,
       length_days: createDto.length_days,
-      sequence: createDto.sequence ?? 0,
-      prerequisite: this.toOptionalObjectId(createDto.prerequisite),
+      sequence: nextSequence,
+      prerequisite: prerequisiteId,
       completion_required: createDto.completion_required ?? false,
       end_with_parent: createDto.end_with_parent ?? false,
       expPublish: createDto.expPublish ?? false,
@@ -359,6 +365,44 @@ export class ExperiencesService {
     const offset = Math.max(0, lengthDays - 1);
     result.setUTCDate(result.getUTCDate() + offset);
     return result;
+  }
+
+  private async calculateNextSequence(
+    organizationId: Types.ObjectId,
+    prerequisiteId?: Types.ObjectId,
+  ): Promise<number> {
+    const latestInOrganization = await this.experienceModel
+      .findOne({ organization: organizationId })
+      .sort({ sequence: -1 })
+      .select('sequence')
+      .exec();
+
+    let nextSequence = (latestInOrganization?.sequence ?? 0) + 1;
+
+    if (!prerequisiteId) {
+      return nextSequence;
+    }
+
+    const lastChild = await this.experienceModel
+      .findOne({ prerequisite: prerequisiteId })
+      .sort({ sequence: -1 })
+      .select('sequence')
+      .exec();
+
+    if (lastChild?.sequence !== undefined) {
+      return Math.max(nextSequence, lastChild.sequence + 1);
+    }
+
+    const parent = await this.experienceModel
+      .findById(prerequisiteId)
+      .select('sequence')
+      .exec();
+
+    if (parent?.sequence === undefined) {
+      return nextSequence;
+    }
+
+    return Math.max(nextSequence, parent.sequence + 1);
   }
 
   private async resolveAccessFilter(
