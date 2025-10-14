@@ -16,6 +16,10 @@ import {
   ExperienceType,
   ExperienceTypeSchema,
 } from './schemas/experience-type.schema';
+import {
+  ExperienceProgress,
+  ExperienceProgressSchema,
+} from '../experience-progress/schemas/experience-progress.schema';
 
 @Module({
   imports: [
@@ -23,6 +27,7 @@ import {
       { name: Experience.name, schema: ExperienceSchema },
       { name: ExperienceType.name, schema: ExperienceTypeSchema },
       { name: ExperienceImage.name, schema: ExperienceImageSchema },
+      { name: ExperienceProgress.name, schema: ExperienceProgressSchema },
     ]),
     AccessControlModule,
   ],

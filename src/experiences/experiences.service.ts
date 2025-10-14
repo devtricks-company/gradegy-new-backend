@@ -18,6 +18,12 @@ import {
   ExperienceDocument,
   ExperienceTimingType,
 } from './schemas/experience.schema';
+import {
+  ExperienceProgress,
+  ExperienceProgressDocument,
+  ExperienceProgressStatus,
+} from '../experience-progress/schemas/experience-progress.schema';
+import { ExperienceStudentAccess } from './interfaces/experience-student-access.interface';
 
 const DEFAULT_EXPERIENCE_POPULATE: PopulateOptions[] = [
   { path: 'experience_type', select: 'title color icon' },
@@ -88,6 +94,8 @@ export class ExperiencesService {
   constructor(
     @InjectModel(Experience.name)
     private readonly experienceModel: Model<ExperienceDocument>,
+    @InjectModel(ExperienceProgress.name)
+    private readonly progressModel: Model<ExperienceProgressDocument>,
     private readonly accessControlService: AccessControlService,
   ) {}
 
@@ -166,6 +174,89 @@ export class ExperiencesService {
     }
 
     return experience;
+  }
+
+  async listStudentsWithAccess(
+    id: string,
+    rawQuery: Record<string, unknown> = {},
+    user?: AuthenticatedUser,
+  ): Promise<ExecuteQueryResult<ExperienceStudentAccess>> {
+    const experience = await this.experienceModel.findById(id).exec();
+
+    if (!experience) {
+      throw new NotFoundException(`Experience with id "${id}" not found.`);
+    }
+
+    if (user) {
+      const accessFilter = await this.resolveAccessFilter(user);
+      if (accessFilter) {
+        const accessible = await this.experienceModel.exists({
+          _id: experience._id,
+          ...accessFilter,
+        });
+
+        if (!accessible) {
+          throw new NotFoundException(`Experience with id "${id}" not found.`);
+        }
+      }
+    }
+
+    const scopeResult =
+      await this.accessControlService.listStudentsForExperienceScope(
+        {
+          organizationId: experience.organization,
+          projectId: experience.project ?? null,
+          categoryId: experience.category ?? null,
+          subcategoryId: experience.subcategory ?? null,
+        },
+        rawQuery,
+      );
+
+    if (!scopeResult.data.length) {
+      return {
+        data: [],
+        meta: scopeResult.meta,
+      };
+    }
+
+    const studentIds: string[] = [];
+    const entryUserIds = new Map<number, string>();
+
+    scopeResult.data.forEach((entry, index) => {
+      const userId = this.extractDocumentId(
+        (entry.user as { _id?: unknown })._id ?? undefined,
+      );
+      if (userId) {
+        studentIds.push(userId);
+        entryUserIds.set(index, userId);
+      }
+    });
+
+    const progressByStudent =
+      studentIds.length > 0
+        ? await this.loadProgressByStudent(experience._id, studentIds)
+        : new Map<string, { status: ExperienceProgressStatus; completedAt: Date | null }>();
+
+    const data: ExperienceStudentAccess[] = scopeResult.data.map((entry, index) => {
+      const userId = entryUserIds.get(index);
+      const progress = userId ? progressByStudent.get(userId) : undefined;
+      const completed =
+        progress?.status === ExperienceProgressStatus.Completed || false;
+      const completedAt =
+        completed && progress?.completedAt ? progress.completedAt : null;
+
+      return {
+        user: entry.user,
+        assignments: entry.assignments,
+        completed,
+        completedAt,
+      };
+    });
+
+    return {
+      data,
+      meta: scopeResult.meta,
+    };
   }
 
   async update(
@@ -365,6 +456,84 @@ export class ExperiencesService {
     const offset = Math.max(0, lengthDays - 1);
     result.setUTCDate(result.getUTCDate() + offset);
     return result;
+  }
+
+  private async loadProgressByStudent(
+    experienceId: Types.ObjectId,
+    studentIds: string[],
+  ): Promise<
+    Map<string, { status: ExperienceProgressStatus; completedAt: Date | null }>
+  > {
+    const uniqueStudentIds = Array.from(new Set(studentIds));
+    if (!uniqueStudentIds.length) {
+      return new Map();
+    }
+
+    const progressRecords = await this.progressModel
+      .find({
+        experience: experienceId,
+        user: { $in: this.toObjectIdArray(uniqueStudentIds) },
+      })
+      .select('user status completedAt updatedAt')
+      .sort({ updatedAt: -1 })
+      .lean()
+      .exec();
+
+    const progressMap = new Map<
+      string,
+      { status: ExperienceProgressStatus; completedAt: Date | null }
+    >();
+
+    for (const record of progressRecords) {
+      const recordUserId = this.extractDocumentId(
+        (record.user as Types.ObjectId | string | undefined) ?? undefined,
+      );
+
+      if (!recordUserId || progressMap.has(recordUserId)) {
+        continue;
+      }
+
+      const status = record.status as ExperienceProgressStatus;
+      let completedAt: Date | null = null;
+
+      if (status === ExperienceProgressStatus.Completed) {
+        const rawCompletedAt = record.completedAt as
+          | Date
+          | string
+          | undefined;
+        if (rawCompletedAt instanceof Date) {
+          completedAt = rawCompletedAt;
+        } else if (typeof rawCompletedAt === 'string') {
+          const parsed = new Date(rawCompletedAt);
+          if (!Number.isNaN(parsed.getTime())) {
+            completedAt = parsed;
+          }
+        }
+      }
+
+      progressMap.set(recordUserId, { status, completedAt });
+    }
+
+    return progressMap;
+  }
+
+  private extractDocumentId(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Types.ObjectId) {
+      return value.toHexString();
+    }
+
+    if (typeof value === 'string') {
+      if (!Types.ObjectId.isValid(value)) {
+        return null;
+      }
+      return new Types.ObjectId(value).toHexString();
+    }
+
+    return null;
   }
 
   private async calculateNextSequence(

@@ -446,6 +446,110 @@ export class AccessControlService {
     };
   }
 
+  async listStudentsForExperienceScope(
+    scope: {
+      organizationId: Types.ObjectId | string;
+      projectId?: Types.ObjectId | string | null;
+      categoryId?: Types.ObjectId | string | null;
+      subcategoryId?: Types.ObjectId | string | null;
+    },
+    rawQuery: Record<string, unknown> = {},
+  ): Promise<ExecuteQueryResult<ScopedStudentWithAssignments>> {
+    const organizationId = this.extractId(scope.organizationId);
+
+    if (!organizationId) {
+      throw new BadRequestException(
+        'An experience must belong to an organization to resolve student access.',
+      );
+    }
+
+    const projectId =
+      scope.projectId !== undefined && scope.projectId !== null
+        ? this.extractId(scope.projectId)
+        : null;
+    const categoryId =
+      scope.categoryId !== undefined && scope.categoryId !== null
+        ? this.extractId(scope.categoryId)
+        : null;
+    const subcategoryId =
+      scope.subcategoryId !== undefined && scope.subcategoryId !== null
+        ? this.extractId(scope.subcategoryId)
+        : null;
+
+    const assignments = await this.assignmentModel
+      .find({ organization: this.toObjectId(organizationId, 'organization') })
+      .populate(USER_ASSIGNMENT_POPULATE)
+      .exec();
+
+    const studentIdSet = new Set<string>();
+    const assignmentsByStudent = new Map<string, Record<string, unknown>[]>();
+
+    for (const assignment of assignments) {
+      if (
+        !this.assignmentProvidesExperienceAccess(assignment, {
+          organizationId,
+          projectId,
+          categoryId,
+          subcategoryId,
+        })
+      ) {
+        continue;
+      }
+
+      const studentId = this.extractId(assignment.user);
+      if (!studentId) {
+        continue;
+      }
+
+      studentIdSet.add(studentId);
+
+      const sanitizedAssignment = this.sanitizeAssignmentDocument(assignment);
+      const existingAssignments = assignmentsByStudent.get(studentId);
+
+      if (existingAssignments) {
+        existingAssignments.push(sanitizedAssignment);
+      } else {
+        assignmentsByStudent.set(studentId, [sanitizedAssignment]);
+      }
+    }
+
+    const baseFilter: FilterQuery<UserDocument> = {
+      role: UserRole.Student,
+      _id: { $in: this.toObjectIdArray(studentIdSet) },
+    };
+
+    const sanitizedRawQuery: Record<string, unknown> = { ...rawQuery };
+    delete sanitizedRawQuery['organizationId'];
+    delete sanitizedRawQuery['projectId'];
+    delete sanitizedRawQuery['categoryId'];
+    delete sanitizedRawQuery['subcategoryId'];
+
+    const queryResult = await executeMongooseQuery<UserDocument>({
+      model: this.userModel,
+      rawQuery: sanitizedRawQuery,
+      baseFilter,
+      config: STUDENT_QUERY_CONFIG,
+    });
+
+    const data: ScopedStudentWithAssignments[] = queryResult.data.map(
+      (student) => {
+        const studentId =
+          this.extractId(
+            (student._id as Types.ObjectId | string | undefined) ?? undefined,
+          ) ?? '';
+        return {
+          user: this.sanitizeUserDocument(student),
+          assignments: assignmentsByStudent.get(studentId) ?? [],
+        };
+      },
+    );
+
+    return {
+      data,
+      meta: queryResult.meta,
+    };
+  }
+
   async listOrganizationsForUser(
     userId: string,
   ): Promise<OrganizationDocument[]> {
@@ -978,6 +1082,54 @@ export class AccessControlService {
         `You do not have ${action} access to subcategory "${subcategoryId}".`,
       );
     }
+  }
+
+  private assignmentProvidesExperienceAccess(
+    assignment: UserAssignmentDocument,
+    scope: {
+      organizationId: string;
+      projectId: string | null;
+      categoryId: string | null;
+      subcategoryId: string | null;
+    },
+  ): boolean {
+    const assignmentOrganizationId = this.extractId(assignment.organization);
+
+    if (
+      !assignmentOrganizationId ||
+      assignmentOrganizationId !== scope.organizationId
+    ) {
+      return false;
+    }
+
+    const assignmentProjectId = this.extractId(assignment.project);
+    if (
+      assignmentProjectId &&
+      scope.projectId &&
+      assignmentProjectId !== scope.projectId
+    ) {
+      return false;
+    }
+
+    const assignmentCategoryId = this.extractId(assignment.category);
+    if (
+      assignmentCategoryId &&
+      scope.categoryId &&
+      assignmentCategoryId !== scope.categoryId
+    ) {
+      return false;
+    }
+
+    const assignmentSubcategoryId = this.extractId(assignment.subcategory);
+    if (
+      assignmentSubcategoryId &&
+      scope.subcategoryId &&
+      assignmentSubcategoryId !== scope.subcategoryId
+    ) {
+      return false;
+    }
+
+    return true;
   }
 
   private buildAssignmentFilterCriteria(
